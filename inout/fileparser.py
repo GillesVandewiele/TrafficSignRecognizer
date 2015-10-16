@@ -22,12 +22,25 @@ class FileParser:
     def readImage(self, path):
         return Image.open(path)
 
-    def writeCSV(self, path):
+    def writeCSV(self, path, predictionObject):
         workbook = xlsxwriter.Workbook(path)
+        worksheet = workbook.add_worksheet("submission")
 
-"""
-import os
-im = Image.open(os.path.join(os.path.dirname(__file__), "../00062_04919.png"));
-print(im.__dict__);
-im.rotate(45).show();
-"""
+        worksheet.write(1,1, "id")
+
+        # Write out first row (all traffic signs)
+        signCounter = 1
+        for trafficSign in predictionObject.TRAFFIC_SIGNS:
+            workbook.write(1, signCounter+1, trafficSign)
+            signCounter+=1
+
+        predictionCounter = 1
+        for prediction in predictionObject.predictions:
+            # Write out prediction id and afterwards 81 probabilities
+            workbook.write(predictionCounter+1, 1, predictionCounter)
+
+            signCounter = 1
+            for trafficSign in predictionObject.TRAFFIC_SIGNS:
+                workbook.write(predictionCounter+1, signCounter+1, prediction[trafficSign])
+
+        workbook.close()

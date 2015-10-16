@@ -8,3 +8,14 @@ __author__ = 'Group16'
     Commissioned by UGent, course Machine Learning
 
 """
+
+class Predictor(object):
+
+    def __init__(self):
+        pass
+
+    def train(self, trainingData):
+        pass
+
+    def predict(self, image):
+        pass

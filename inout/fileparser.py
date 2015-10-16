@@ -14,33 +14,39 @@ __author__ = 'Group16'
 
 """
 
+
 class FileParser:
 
     def __init__(self):
         pass
 
-    def readImage(self, path):
+    @staticmethod
+    def read_image(path):
         return Image.open(path)
 
-    def writeCSV(self, path, predictionObject):
+    @staticmethod
+    def write_CSV(path, predictionObject):
         workbook = xlsxwriter.Workbook(path)
         worksheet = workbook.add_worksheet("submission")
 
-        worksheet.write(1,1, "id")
+        worksheet.write(0,0, "id")
 
         # Write out first row (all traffic signs)
-        signCounter = 1
+        signCounter = 0
         for trafficSign in predictionObject.TRAFFIC_SIGNS:
-            workbook.write(1, signCounter+1, trafficSign)
+            worksheet.write(1, signCounter+1, trafficSign)
             signCounter+=1
 
-        predictionCounter = 1
+        predictionCounter = 0
         for prediction in predictionObject.predictions:
             # Write out prediction id and afterwards 81 probabilities
-            workbook.write(predictionCounter+1, 1, predictionCounter)
+            worksheet.write(predictionCounter+1, 1, predictionCounter)
 
-            signCounter = 1
+            signCounter = 0
             for trafficSign in predictionObject.TRAFFIC_SIGNS:
-                workbook.write(predictionCounter+1, signCounter+1, prediction[trafficSign])
+                worksheet.write(predictionCounter+1, signCounter+1, prediction[trafficSign])
+                signCounter += 1
+
+            predictionCounter += 1
 
         workbook.close()

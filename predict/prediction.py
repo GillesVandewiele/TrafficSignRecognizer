@@ -119,7 +119,7 @@ class Prediction(object):
                      "A29",     # Opgelet koeien
                      "A31",     # Opgelet werken
                      "A51",     # Uitroepteken
-                     "B51A",    # Voorrangsbaan van links en rechts&
+                     "B15A",    # Voorrangsbaan van links en rechts&
                      "B17"      # Voorrang geven aan links en rechts
                      ]
 
@@ -137,8 +137,8 @@ class Prediction(object):
                 raise PredictionException("The prediction must be a dict")
             if len(prediction) != len(Prediction.TRAFFIC_SIGNS):
                 raise PredictionException("The prediction dict must have a length of 81")
-            if not all(key in Prediction.TRAFFIC_SIGNS for key in prediction.keys):
-                raise PredictionException
+            if not all(key in Prediction.TRAFFIC_SIGNS for key in prediction):
+                raise PredictionException("Mismatching keys")
 
         self.predictions.append(prediction)
 

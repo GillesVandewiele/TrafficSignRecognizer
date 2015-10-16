@@ -1,3 +1,9 @@
+import os
+from inout.fileparser import FileParser
+
+from predict.benchmark import BenchmarkPredictor
+from predict.prediction import Prediction
+
 __author__ = 'Group16'
 
 """
@@ -9,7 +15,10 @@ __author__ = 'Group16'
 
 """
 
-class TrafficSignRecognizer:
+pred = BenchmarkPredictor()
+pred.train(os.path.join(os.path.dirname(__file__), "train"))
+predictionObject = Prediction()
+for testImage in os.listdir(os.path.join(os.path.dirname(__file__), "test")):
+    predictionObject.addPrediction(pred.predict(os.path.join(os.path.dirname(__file__), "test", testImage)))
 
-    def __init__(self):
-        pass
+FileParser.write_CSV("benchmark.xlsx", predictionObject)

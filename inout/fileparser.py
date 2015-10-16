@@ -33,17 +33,17 @@ class FileParser:
 
         # Write out first row (all traffic signs)
         signCounter = 0
-        for trafficSign in predictionObject.TRAFFIC_SIGNS:
-            worksheet.write(1, signCounter+1, trafficSign)
+        for trafficSign in sorted(predictionObject.TRAFFIC_SIGNS):
+            worksheet.write(0, signCounter+1, trafficSign)
             signCounter+=1
 
         predictionCounter = 0
         for prediction in predictionObject.predictions:
             # Write out prediction id and afterwards 81 probabilities
-            worksheet.write(predictionCounter+1, 1, predictionCounter)
+            worksheet.write(predictionCounter+1, 0, predictionCounter)
 
             signCounter = 0
-            for trafficSign in predictionObject.TRAFFIC_SIGNS:
+            for trafficSign in sorted(predictionObject.TRAFFIC_SIGNS):
                 worksheet.write(predictionCounter+1, signCounter+1, prediction[trafficSign])
                 signCounter += 1
 

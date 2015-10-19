@@ -1,3 +1,5 @@
+import math
+
 __author__ = 'Group16'
 
 """
@@ -123,22 +125,22 @@ class Prediction(object):
                      "B17"      # Voorrang geven aan links en rechts
                      ]
 
-    def __init__(self, predictions = []):
+    def __init__(self, predictions=None):
+        if not predictions:
+            predictions = []
         self.predictions = predictions
 
     def addPrediction(self, prediction, typechecking=False):
         """
             Add a prediction to the predictions list
-                :param prediction: should be a dict of a constant length (number of different traffic signs)
-                :param typechecking: boolean that can be put on True for debugging purposes (slows down object creation)
+            :param prediction: should be a dict of a constant length (number of different traffic signs)
+            :param typechecking: boolean that can be put on True for debugging purposes (slows down object creation)
         """
         if typechecking:
-            if prediction is not dict:
-                raise PredictionException("The prediction must be a dict")
             if len(prediction) != len(Prediction.TRAFFIC_SIGNS):
-                raise PredictionException("The prediction dict must have a length of 81")
+                raise PredictionException("The prediction dict must have a length of 81", prediction)
             if not all(key in Prediction.TRAFFIC_SIGNS for key in prediction):
-                raise PredictionException("Mismatching keys")
+                raise PredictionException("Mismatching keys", prediction)
 
         self.predictions.append(prediction)
 
@@ -147,12 +149,30 @@ class Prediction(object):
         for prediction in newPredictions:
             self.addPrediction(prediction)
 
+    def evaluate(self, results):
+        """
+            Evaluate the logloss score
+            :param results: array with the same length as :var predictions with the corresponding result as a string
+            :return: the logloss score
+        """
+        logloss = 0
+        counter = 0
+        for prediction in self.predictions:
+            p = max(min(prediction[results[counter]], 1-pow(10, -15)), pow(10, -15))
+            logloss += math.log(p)
+            counter += 1
+
+        logloss /= -len(self.predictions)
+
+        return logloss
+
 
 class PredictionException(Exception):
-    def __init__(self, value):
+    def __init__(self, value, prediction):
         self.value = value
+        self.prediction = prediction
     def __str__(self):
-        return repr(self.value)
+        return repr(self.value) + self.prediction
 
 
 

@@ -14,7 +14,12 @@ class Predictor(object):
     def __init__(self):
         pass
 
-    def train(self, trainingData):
+    def train(self, trainingData, results):
+        """
+        Train the data.
+        :param trainingData: The filenames. Should have same length as results and correspond.
+        :param results: The results (string such as D10, D1e, ...). Should have same length as results and correspond.
+        """
         pass
 
     def predict(self, image):

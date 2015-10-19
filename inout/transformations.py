@@ -8,3 +8,7 @@ __author__ = 'Group16'
     Commissioned by UGent, course Machine Learning
 
 """
+
+class Transformations:
+    pass
+

@@ -118,6 +118,8 @@ for train, validation in kf:
 
 
 print("Average logloss score of the color predictor using ", k, " folds: ", avg_logloss/k)
+
+
 """
 pred = BenchmarkPredictor()
 pred.train()

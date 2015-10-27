@@ -1,8 +1,10 @@
+import colorsys
 import operator
 import math
-from numpy import histogram
-from skimage.io import imread
+from numpy import histogram, asarray, pad
+from skimage.io import imread, imsave
 from predict.predictor import Predictor
+from skimage.transform import resize
 __author__ = 'Group 16'
 
 """
@@ -15,63 +17,192 @@ __author__ = 'Group 16'
 """
 
 class ColorPredictor(Predictor):
+    """
+    :var histograms: Dictionary with keys the name of sign and as value an array of size 3 with histograms for R, G & B
+    """
 
     def __init__(self):
         self.histograms = {}
 
-    def train(self, trainingData, results, nBins):
+    def train(self, trainingData, results):
         """
         Train the data.
         :param trainingData: The filenames. Should have same length as results and correspond.
         :param results: The results (string such as D10, D1e, ...). Should have same length as results and correspond.
         """
-        histogram_sums = {}
-        histogram_counters = {}
-        counter = 0
-        for element in trainingData:
-            img = imread(element)
-            histogram_temp = histogram(img, bins=nBins)
-            if results[counter] not in histogram_sums:
-                histogram_sums[results[counter]] = histogram_temp
-                histogram_counters[results[counter]] = 1
+
+
+        # TODO: find a good way to extract information out of the histograms of the training data!!
+        self.histograms = {}
+        counters = {}
+        for element in range(len(trainingData)):
+            print("Training ", trainingData[element], "...")
+
+            if results[element] not in self.histograms:
+                self.histograms[results[element]] = self.extract_hue_histogram(trainingData[element])[0]
+                counters[results[element]] = 1
             else:
-                histogram_sums[results[counter]] = [x + y for x, y in zip(histogram_sums[results[counter]], histogram_temp)]
-                histogram_counters[results[counter]] += 1
-            counter += 1
-
-        for element in histogram_sums:
-            self.histograms[element] = [x / histogram_counters[element] for x in histogram_sums[element]]
-
-    #TODO: calculate histogram for each color channel seperately!
-    def predict(self, image):
-        nBins = len(list(self.histograms.values())[0][0])
-        img = imread(image)
-        test_image_histogram = histogram(img, bins=nBins)
-        mse_values = {}
-        mse_sum = 0
-
-        print("image = ", image)
+                self.histograms[results[element]] = [ x + y for x, y in zip(self.histograms[results[element]],
+                                                                            self.extract_hue_histogram(trainingData[element])[0]) ]
+                counters[results[element]] += 1
 
         for element in self.histograms:
-            mse_value = 0
-            for bin in range(nBins):
-                mse_value += pow(self.histograms[element][0][bin] - test_image_histogram[0][bin], 2)
-            mse_sum += mse_value
-            if element not in mse_values:
-                mse_values[element] = mse_value
-            else:
-                mse_values[element] += mse_value
+            self.histograms[element] = [x/counters[element] for x in self.histograms[element]]
 
-        mse_log_sum = 0
-        for value in mse_values:
-            mse_values[value] = math.log(mse_values[value]/mse_sum)*-1
-            mse_log_sum += mse_values[value]
+    @staticmethod
+    def blockshaped(arr, nrows, ncols):
+        """
+        Return an array of shape (n, nrows, ncols) where
+        n * nrows * ncols = arr.size
 
-        norm_mse_values = {}
-        for value in mse_values:
-             norm_mse_values[value] = mse_values[value]/mse_log_sum
+        If arr is a 2D array, the returned array should look like n subblocks with
+        each subblock preserving the "physical" layout of arr.
+        """
+        h, w = arr.shape
+        return (arr.reshape(h//nrows, nrows, -1, ncols)
+                   .swapaxes(1,2)
+                   .reshape(-1, nrows, ncols))
 
-        print(sorted(norm_mse_values.items(), key=operator.itemgetter(1), reverse=True))
-        print(sorted(mse_values.items(), key=operator.itemgetter(1), reverse=True))
+    def extract_hue_histogram(self, element):
 
-        return norm_mse_values
+        # Read image as array with RGB values
+        img = imread(element)
+
+        # Converting the RGB values to HSV values
+        hsv = [None]*len(img)
+        for i in range(len(img)):
+            temp = [None]*len(img[0])
+            for j in range(len(img[0])):
+                temp[j] = colorsys.rgb_to_hsv(img[i, j, 0], img[i, j ,1], img[i, j, 2])
+            hsv[i] = temp
+
+        # Extracting the 3 channels
+        hue = [None]*len(img)
+        saturation = [None]*len(img)
+        value = [None]*len(img)
+        for x in range(len(img)):
+            hue_temp = [None]*len(img[0])
+            saturation_temp = [None]*len(img[0])
+            value_temp = [None]*len(img[0])
+            for y in range(len(img[0])):
+                hue_temp[y] = hsv[x][y][0]
+                saturation_temp[y] = hsv[x][y][1]
+                value_temp[y] = hsv[x][y][2]
+            hue[x] = hue_temp
+            saturation[x] = saturation_temp
+            value[x] = value_temp
+
+        # Normalize the Value values
+        value_norm = [None]*len(value)
+        for x in range(len(value)):
+            value_norm_temp = [None]*len(value[x])
+            for y in range(len(value[x])):
+                value_norm_temp[y] = value[x][y]/255
+            value_norm[x] = value_norm_temp
+        value = value_norm
+
+        # We now loop through the hue values and filter out the ones with red values and set them to white
+        # To avoid inconsistencies, we need to make sure the hue value lays in his chromatic area,
+        # else we set the pixel to black
+        for x in range(len(hue)):
+            for y in range(len(hue[x])):
+                if (hue[x][y]>0.95 and hue[x][y]<=1) or (hue[x][y]>=0 and hue[x][y]<0.05):
+                    hue[x][y] = 1
+                if saturation[x][y] < 0.25:  # Achromatic area
+                    hue[x][y] = 0
+                if value[x][y] < 0.2 or value[x][y] > 0.9:  # Achromatic area
+                    hue[x][y] = 0
+
+        # Divide the image in subimages (first pad them)
+        subimage_size = 4
+        y_pad = 0
+        x_pad = 0
+        if(len(hue)%subimage_size != 0):
+            y_pad = subimage_size-(len(hue)%subimage_size)
+        if(len(hue[0])%subimage_size != 0):
+            x_pad = subimage_size-(len(hue[0])%subimage_size)
+        subimages = ColorPredictor.blockshaped(pad(asarray(hue), ((0, y_pad), (0, x_pad)), 'minimum'), subimage_size, subimage_size)
+        print(len(subimages), len(subimages[0]), len(subimages[0][0]))
+
+        """
+        # For every subimage we count the number of white pixels, if it's greater than 25%, we put a
+        # white pixel in the corresponding position of the seed image
+        print(len(hue), y_pad)
+        seed_image = [None]*int(((len(hue)+y_pad)/subimage_size))
+        for i in range(len(seed_image)):
+            seed_image_temp = [float(0)]*int(((len(hue)+x_pad)/subimage_size))
+            for j in range(len(seed_image_temp)-1):
+                sum_ones = sum(1 for row in subimages[i*(len(seed_image_temp)-1) + j]
+                                 for pixel in row if pixel==1)
+                if(sum_ones > 0.25 * subimage_size*subimage_size):
+                    seed_image_temp[j] = (float(1), i, j)
+            seed_image[i] = seed_image_temp
+
+        print(asarray(hue))
+#        print(asarray(seed_image))
+
+        # We now use the seed image and the hue image to apply region growing:
+        # Each seed corresponds to a region:
+        #    * Label seed points according their initial grouping.
+        #    * Put neighbors of seed points (the initial T) in the SSL.
+        #    * While the SSL is not empty:
+        #       * Remove first point y from SSL.
+        #       * Test the neighbors of this point:
+        #       * If all neighbors of y which are already labeled
+        #         (other than with the boundary label) have
+        #         the same label
+        #           * Set y to this label.
+        #           * Update running mean of corresponding region.
+        #           * Add neighbors of y which are neither already
+        #             set nor already in the SSL to the SSL according
+        #             to their value of 6. (See note below).
+                  else
+        #           * Flag y with the boundary label.
+        x=y=0
+        while x < len(hue):
+            while y < len(hue[x]):
+
+                y += subimage_size
+            x += subimage_size
+        """
+
+        # Get the histogram of the hue values, normalize it and return it
+        hist = histogram(hue, bins=10, range=(0, 1))
+        # DEBUG: Save our results
+        imsave(element[:-4]+'test.png', asarray(hue))
+        return [[x/sum(hist[0]) for x in hist[0]], hist[1]]
+
+        # TODO: apply region growing algorithm for even better performance!!
+
+
+
+
+
+
+    def predict(self, image):
+
+        print("Predicting ", image, "...")
+
+        hist = self.extract_hue_histogram(image)
+
+        # Extract histogram
+        hist = [x/sum(hist[0]) for x in hist[0]]
+
+        # Now calculate the MSE to all other element
+        mse_values = {}
+        for element in self.histograms:
+            mse_values[element] = sum([abs(hist[x]-self.histograms[element][x]) for x in range(len(hist))])
+
+        # Reverse normalise the values
+        for element in self.histograms:
+            mse_values[element] /= sum(mse_values.values())
+            mse_values[element] = -math.log(mse_values[element])
+
+        #TODO: probabilities are too close to eachother, apply penalties!
+
+        probabilities = {}
+        for element in mse_values:
+            probabilities[element] = mse_values[element] / sum(mse_values.values())
+
+        print(sorted(probabilities.items(), key=operator.itemgetter(1), reverse=True))
+        return probabilities

@@ -40,7 +40,7 @@ class FileParser:
         predictionCounter = 0
         for prediction in predictionObject.predictions:
             # Write out prediction id and afterwards 81 probabilities
-            worksheet.write(predictionCounter+1, 0, predictionCounter)
+            worksheet.write(predictionCounter+1, 0, predictionCounter+1)
 
             signCounter = 0
             for trafficSign in sorted(predictionObject.TRAFFIC_SIGNS):

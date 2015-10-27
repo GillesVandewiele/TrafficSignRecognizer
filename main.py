@@ -1,8 +1,10 @@
 import os
 import numpy
+import skimage
 from sklearn.cross_validation import KFold
 from inout.fileparser import FileParser
 from inout.transformations import Transformations
+from skimage.io import imread
 
 from predict.benchmark import BenchmarkPredictor
 from predict.colorpredictor import ColorPredictor
@@ -18,43 +20,6 @@ __author__ = 'Group16'
     Commissioned by UGent, course Machine Learning
 
 """
-
-"""
-train_images_dir = os.path.join(os.path.dirname(__file__), "train")
-d10_dir = os.path.join(train_images_dir, "blue_circles", "D10")
-for image in os.listdir(d10_dir):
-    img = FileParser.read_image(os.path.join(d10_dir, image))
-    img_gray = img.convert("L")
-    print("image = ", image, "; histogram = ")
-    print(img.histogram())
-
-    # Get indices of 10 greatest values of histogram
-    n=10
-    histogram = numpy.array(img.histogram())
-    print(histogram.argsort()[-n:])
-
-d5_dir = os.path.join(train_images_dir, "blue_circles", "D5")
-for image in os.listdir(d5_dir):
-    img = FileParser.read_image(os.path.join(d5_dir, image))
-    img_gray = img.convert("L")
-    print("image = ", image, "; histogram = ")
-    print(img.histogram())
-
-    # Get indices of 10 greatest values of histogram
-    n=10
-    histogram = numpy.array(img.histogram())
-    print(histogram.argsort()[-n:])
-
-number_images = sum([len(files) for r, d, files in os.walk(train_images_dir)])
-kf = KFold(number_images, n_folds=2, shuffle=True)
-for train, test in kf:
-    print("%s %s", (train, test))
-
-
-"""
-def get_color_histogram_information(images_path, n):
-    pass
-
 def get_results(train_images_dir):
         results = []
         for shapesDirectory in os.listdir(train_images_dir):
@@ -66,6 +31,7 @@ def get_results(train_images_dir):
 
 # Directory of our training data (it's a mess in python...)
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
+test_images_dir = os.path.join(os.path.dirname(__file__), "test")
 
 # Get the results of the training data & a list of all images
 results = get_results(train_images_dir)
@@ -74,6 +40,11 @@ for root, subFolders, files in os.walk(train_images_dir):
     for file in files:
         train_images.append(os.path.join(root, file))
 
+test_images = []
+for root, subFolders, files in os.walk(test_images_dir):
+    for file in files:
+        test_images.append(os.path.join(root, file))
+"""
 # Decide on indices of training and validation data using k-fold cross validation
 k = 2
 number_images = len(train_images)
@@ -108,7 +79,10 @@ for train, validation in kf:
     validation_set_results = [results[i] for i in validation]
 
     prediction_object = Prediction()
-    pred.train(train_set, train_set_results, 256)
+
+    pred.train(train_set, train_set_results)
+
+    print(pred.histograms)
 
     for elt in validation_set:
         prediction_object.addPrediction(pred.predict(elt))
@@ -116,15 +90,24 @@ for train, validation in kf:
     # Evaluate and add to logloss
     avg_logloss += prediction_object.evaluate(validation_set_results)
 
-
 print("Average logloss score of the color predictor using ", k, " folds: ", avg_logloss/k)
 """
-pred = BenchmarkPredictor()
-pred.train()
-predictionObject = Prediction()
-for testImage in os.listdir(os.path.join(os.path.dirname(__file__), "test")):
-    predictionObject.addPrediction(pred.predict(os.path.join(os.path.dirname(__file__), "test", testImage)))
-"""
 
-# Write out the output in the required format
-#FileParser.write_CSV("benchmark.xlsx", predictionObject)
+pred = ColorPredictor()
+pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "00722_04184.png"))
+pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "00425_09710.png"))
+
+# Run it on the test set and write out the output in the required format
+"""
+pred = ColorPredictor()
+
+pred.train(train_images, results)
+
+prediction_object = Prediction()
+for elt in test_images:
+    prediction_object.addPrediction(pred.predict(elt))
+
+FileParser.write_CSV("color_chances.xlsx", prediction_object)
+prediction_object.adapt_probabilities()
+FileParser.write_CSV("color_nochances.xlsx", prediction_object)
+"""

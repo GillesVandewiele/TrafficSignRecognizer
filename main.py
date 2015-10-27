@@ -44,12 +44,13 @@ test_images = []
 for root, subFolders, files in os.walk(test_images_dir):
     for file in files:
         test_images.append(os.path.join(root, file))
-"""
+
 # Decide on indices of training and validation data using k-fold cross validation
 k = 2
 number_images = len(train_images)
-kf = KFold(number_images, n_folds=k, shuffle=True, random_state=1337)
+kf = KFold(100, n_folds=k, shuffle=True, random_state=1337)
 
+"""
 # Benchmark predictor
 pred = BenchmarkPredictor()
 avg_logloss = 0
@@ -68,6 +69,10 @@ for train, validation in kf:
     avg_logloss += prediction_object.evaluate(validation_set_results)
 
 print("Average logloss score of the benchmark predictor using ", k, " folds: ", avg_logloss/k)
+"""
+
+train_images = train_images[0:100]
+results = results[0:100]
 
 # Color predictor
 pred = ColorPredictor()
@@ -92,14 +97,11 @@ for train, validation in kf:
 
 print("Average logloss score of the color predictor using ", k, " folds: ", avg_logloss/k)
 
-
 """
-# path = 'C:\\Users\Tim Deweert\Documents\GitHub\TrafficSignRecognizer\\train\\'
-# os.chdir(path);
-train_images_dir = os.path.join(os.path.dirname(__file__), "train")
 pred = ColorPredictor()
-pred.extract_hue_histogram(os.path.join(train_images_dir, "rectangles_up", "E9b", "02615_02944.png"))
-pred.extract_hue_histogram(os.path.join(train_images_dir, "rectangles_up", "E9b", "01816_00774.png"))
+pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "test.png"))
+pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "00917_11555.png"))
+"""
 
 # Run it on the test set and write out the output in the required format
 """

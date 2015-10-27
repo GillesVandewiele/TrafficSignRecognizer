@@ -94,10 +94,12 @@ print("Average logloss score of the color predictor using ", k, " folds: ", avg_
 
 
 """
-
+# path = 'C:\\Users\Tim Deweert\Documents\GitHub\TrafficSignRecognizer\\train\\'
+# os.chdir(path);
+train_images_dir = os.path.join(os.path.dirname(__file__), "train")
 pred = ColorPredictor()
-pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "00722_04184.png"))
-pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "00425_09710.png"))
+pred.extract_hue_histogram(os.path.join(train_images_dir, "rectangles_up", "E9b", "02615_02944.png"))
+pred.extract_hue_histogram(os.path.join(train_images_dir, "rectangles_up", "E9b", "01816_00774.png"))
 
 # Run it on the test set and write out the output in the required format
 """

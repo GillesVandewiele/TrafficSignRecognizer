@@ -36,8 +36,8 @@ print(os.getcwd())
 # read image to array
 image = array(Image.open('test3.jpg').convert('L'))
 
-img1 = cv2.imread('testR.jpg',0)
-img2 = cv2.imread('test2.jpg',0)
+img1 = cv2.imread('01816_00774test.png',0)
+img2 = cv2.imread('02615_02944test.png',0)
 
 ret, thresh = cv2.threshold(img1, 127, 255,0)
 ret, thresh2 = cv2.threshold(img2, 127, 255,0)

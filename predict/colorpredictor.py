@@ -113,71 +113,30 @@ class ColorPredictor(Predictor):
                 if value[x][y] < 0.2 or value[x][y] > 0.9:  # Achromatic area
                     hue[x][y] = 0
 
-        # Divide the image in subimages (first pad them)
-        subimage_size = 4
-        y_pad = 0
-        x_pad = 0
-        if(len(hue)%subimage_size != 0):
-            y_pad = subimage_size-(len(hue)%subimage_size)
-        if(len(hue[0])%subimage_size != 0):
-            x_pad = subimage_size-(len(hue[0])%subimage_size)
-        subimages = ColorPredictor.blockshaped(pad(asarray(hue), ((0, y_pad), (0, x_pad)), 'minimum'), subimage_size, subimage_size)
-        print(len(subimages), len(subimages[0]), len(subimages[0][0]))
-
-        """
-        # For every subimage we count the number of white pixels, if it's greater than 25%, we put a
-        # white pixel in the corresponding position of the seed image
-        print(len(hue), y_pad)
-        seed_image = [None]*int(((len(hue)+y_pad)/subimage_size))
-        for i in range(len(seed_image)):
-            seed_image_temp = [float(0)]*int(((len(hue)+x_pad)/subimage_size))
-            for j in range(len(seed_image_temp)-1):
-                sum_ones = sum(1 for row in subimages[i*(len(seed_image_temp)-1) + j]
-                                 for pixel in row if pixel==1)
-                if(sum_ones > 0.25 * subimage_size*subimage_size):
-                    seed_image_temp[j] = (float(1), i, j)
-            seed_image[i] = seed_image_temp
-
-        print(asarray(hue))
-#        print(asarray(seed_image))
-
-        # We now use the seed image and the hue image to apply region growing:
-        # Each seed corresponds to a region:
-        #    * Label seed points according their initial grouping.
-        #    * Put neighbors of seed points (the initial T) in the SSL.
-        #    * While the SSL is not empty:
-        #       * Remove first point y from SSL.
-        #       * Test the neighbors of this point:
-        #       * If all neighbors of y which are already labeled
-        #         (other than with the boundary label) have
-        #         the same label
-        #           * Set y to this label.
-        #           * Update running mean of corresponding region.
-        #           * Add neighbors of y which are neither already
-        #             set nor already in the SSL to the SSL according
-        #             to their value of 6. (See note below).
-                  else
-        #           * Flag y with the boundary label.
-        x=y=0
-        while x < len(hue):
-            while y < len(hue[x]):
-
-                y += subimage_size
-            x += subimage_size
-        """
-
         # Get the histogram of the hue values, normalize it and return it
-        hist = histogram(hue, bins=10, range=(0, 1))
+        hist = histogram(hue, bins=20, range=(0, 1))
+
         # DEBUG: Save our results
-        imsave(element[:-4]+'test.png', asarray(hue))
+        #imsave(element[:-4]+'test.png', asarray(hue))
+
+        # Red 250, Yellow 35, Blue 150-160
         return [[x/sum(hist[0]) for x in hist[0]], hist[1]]
 
         # TODO: apply region growing algorithm for even better performance!!
 
 
-
-
-
+    def getChanceOnColor(self, color, histogram):
+        # Histogram should contain 20 bins equally spaced from 0 to 1 (0, 0.05, 0.1, ... )
+        if color == "red":
+            return histogram[19]
+        if color == "blue":
+            return histogram[12] + histogram[13]
+        if color == "yellow":
+            return histogram[3]
+        if color == "black":
+            return histogram[0]
+        if color == "white":
+            return histogram[0]
 
     def predict(self, image):
 

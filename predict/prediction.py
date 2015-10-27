@@ -166,6 +166,12 @@ class Prediction(object):
 
         return logloss
 
+    def adapt_probabilities(self):
+        for prediction in self.predictions:
+            max_element = max(self.predictions[prediction], key=self.predictions[prediction].get)
+            self.predictions[prediction] = dict.fromkeys(self.predictions, 0)
+            self.predictions[prediction][max_element] = 1
+
 
 class PredictionException(Exception):
     def __init__(self, value, prediction):

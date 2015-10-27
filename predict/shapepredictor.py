@@ -36,8 +36,8 @@ print(os.getcwd())
 # read image to array
 image = array(Image.open('test3.jpg').convert('L'))
 
-img1 = cv2.imread('test2.jpg',0)
-img2 = cv2.imread('testC2.jpg',0)
+img1 = cv2.imread('testR.jpg',0)
+img2 = cv2.imread('test2.jpg',0)
 
 ret, thresh = cv2.threshold(img1, 127, 255,0)
 ret, thresh2 = cv2.threshold(img2, 127, 255,0)
@@ -66,10 +66,10 @@ index = 0;
 max_area = cv2.contourArea(contours[0])
 for i in range(0,len(contours)):
 
-    img_rgb = cv2.cvtColor(img2,cv2.COLOR_GRAY2RGB)
-    cv2.drawContours(img_rgb, contours[i], -1, (255,0,0), 5)
-    cv2.imshow("window title", img_rgb)
-    cv2.waitKey()
+    # img_rgb = cv2.cvtColor(img2,cv2.COLOR_GRAY2RGB)
+    # cv2.drawContours(img_rgb, contours[i], -1, (255,0,0), 5)
+    # cv2.imshow("window title", img_rgb)
+    # cv2.waitKey()
 
     area = cv2.contourArea(contours[i])
     if area > max_area:

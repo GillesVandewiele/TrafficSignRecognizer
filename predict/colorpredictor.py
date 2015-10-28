@@ -117,7 +117,7 @@ class ColorPredictor(Predictor):
         hist = histogram(hue, bins=20, range=(0, 1))
 
         # DEBUG: Save our results
-        #imsave(element[:-4]+'test.png', asarray(hue))
+        imsave(element[:-4]+'test.png', asarray(hue))
 
         # Red 250, Yellow 35, Blue 150-160
         return [[x/sum(hist[0]) for x in hist[0]], hist[1]]

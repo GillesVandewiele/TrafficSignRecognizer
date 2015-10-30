@@ -9,6 +9,8 @@ from skimage.io import imread
 from predict.benchmark import BenchmarkPredictor
 from predict.colorpredictor import ColorPredictor
 from predict.prediction import Prediction
+from predict.shapepredictor import ShapePredictor
+
 
 __author__ = 'Group16'
 
@@ -103,7 +105,8 @@ pred = ColorPredictor()
 path = 'C:\\Users\Tim Deweert\Documents\GitHub\TrafficSignRecognizer'
 os.chdir(path);
 #pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "test.png"))
-pred.extract_hue_histogram(os.path.join(path,"train","diamonds","B9", "00127_03135.png"))
+pred.extract_hue_histogram(os.path.join(path,"train","blue_circles","D10", "00181_07208.png"))
+
 
 
 # Run it on the test set and write out the output in the required format

@@ -16,7 +16,11 @@ __author__ = 'Group16'
     Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
     Commissioned by UGent, course Machine Learning
 """
+<<<<<<< HEAD
 """
+=======
+
+>>>>>>> gilles
 def get_results(train_images_dir):
         results = []
         for shapesDirectory in os.listdir(train_images_dir):
@@ -41,8 +45,12 @@ for root, subFolders, files in os.walk(test_images_dir):
 k = 2
 number_images = len(train_images)
 kf = KFold(100, n_folds=k, shuffle=True, random_state=1337)
+<<<<<<< HEAD
 """
 """
+=======
+
+>>>>>>> gilles
 # Benchmark predictor
 pred = BenchmarkPredictor()
 avg_logloss = 0
@@ -58,8 +66,14 @@ for train, validation in kf:
     # Evaluate and add to logloss
     avg_logloss += prediction_object.evaluate(validation_set_results)
 print("Average logloss score of the benchmark predictor using ", k, " folds: ", avg_logloss/k)
+<<<<<<< HEAD
 """
 """
+=======
+
+
+
+>>>>>>> gilles
 train_images = train_images[0:100]
 results = results[0:100]
 # Color predictor
@@ -78,7 +92,11 @@ for train, validation in kf:
     # Evaluate and add to logloss
     avg_logloss += prediction_object.evaluate(validation_set_results)
 print("Average logloss score of the color predictor using ", k, " folds: ", avg_logloss/k)
+<<<<<<< HEAD
 """
+=======
+
+>>>>>>> gilles
 """
 pred = ColorPredictor()
 pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "test.png"))

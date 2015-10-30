@@ -3,7 +3,6 @@ import numpy
 import skimage
 from sklearn.cross_validation import KFold
 from inout.fileparser import FileParser
-from inout.transformations import Transformations
 from skimage.io import imread
 
 from predict.benchmark import BenchmarkPredictor
@@ -19,6 +18,7 @@ __author__ = 'Group16'
     Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
     Commissioned by UGent, course Machine Learning
 
+"""
 """
 def get_results(train_images_dir):
         results = []
@@ -49,7 +49,7 @@ for root, subFolders, files in os.walk(test_images_dir):
 k = 2
 number_images = len(train_images)
 kf = KFold(100, n_folds=k, shuffle=True, random_state=1337)
-
+"""
 """
 # Benchmark predictor
 pred = BenchmarkPredictor()
@@ -70,7 +70,7 @@ for train, validation in kf:
 
 print("Average logloss score of the benchmark predictor using ", k, " folds: ", avg_logloss/k)
 """
-
+"""
 train_images = train_images[0:100]
 results = results[0:100]
 
@@ -96,7 +96,7 @@ for train, validation in kf:
     avg_logloss += prediction_object.evaluate(validation_set_results)
 
 print("Average logloss score of the color predictor using ", k, " folds: ", avg_logloss/k)
-
+"""
 """
 pred = ColorPredictor()
 pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "test.png"))
@@ -118,3 +118,19 @@ FileParser.write_CSV("color_chances.xlsx", prediction_object)
 prediction_object.adapt_probabilities()
 FileParser.write_CSV("color_nochances.xlsx", prediction_object)
 """
+
+import numpy as np
+X = np.array([[-1, -1, 1], [-2, -1, 1], [1, 1, -1], [2, 1, -1]])
+y = np.array(["B5", "B5", "A1", "A1"])
+from sklearn.svm import SVC
+# We use C-SVM with a linear kernel and want to predict probabilities
+# max_iter = -1 for no limit on iterations (tol is our stopping criterion)
+# Put verbose off for some output and don't use the shrinking heuristic (needs some testing)
+# Allocate 1 GB of memory for our kernel
+# We are using seed 1337 to always get the same results (can be put on None for testing)
+clf = SVC(C=1.0, cache_size=1000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
+          random_state=1337, shrinking=False, tol=0.001, verbose=False)
+clf.fit(X, y)
+print(clf.predict_proba([[-0.8, -1, 1]]))
+pred = ColorPredictor()
+pred.extract_hue(os.path.join(os.path.dirname(__file__), "01856_06592.png"))

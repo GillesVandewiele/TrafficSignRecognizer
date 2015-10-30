@@ -157,20 +157,15 @@ class Prediction(object):
         """
         logloss = 0
         counter = 0
+        results_indices = sorted(set(results))
         for prediction in self.predictions:
-            p = max(min(prediction[results[counter]], 1-pow(10, -15)), pow(10, -15))
+            p = max(min(prediction[results_indices.index(results[counter])-1], 1-pow(10, -15)), pow(10, -15))
             logloss += math.log(p)
             counter += 1
 
         logloss /= -len(self.predictions)
 
         return logloss
-
-    def adapt_probabilities(self):
-        for prediction in self.predictions:
-            max_element = max(self.predictions[prediction], key=self.predictions[prediction].get)
-            self.predictions[prediction] = dict.fromkeys(self.predictions, 0)
-            self.predictions[prediction][max_element] = 1
 
 
 class PredictionException(Exception):

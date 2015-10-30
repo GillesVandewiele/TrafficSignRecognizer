@@ -16,7 +16,7 @@ __author__ = 'Group16'
     Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
     Commissioned by UGent, course Machine Learning
 """
-<<<<<<< HEAD
+
 """
 =======
 
@@ -94,9 +94,7 @@ for train, validation in kf:
 print("Average logloss score of the color predictor using ", k, " folds: ", avg_logloss/k)
 <<<<<<< HEAD
 """
-=======
 
->>>>>>> gilles
 """
 pred = ColorPredictor()
 pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "test.png"))

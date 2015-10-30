@@ -105,8 +105,8 @@ class ColorPredictor(Predictor):
             for y in range(len(hue[x])):
                 if (hue[x][y]>0.95 and hue[x][y]<=1) or (hue[x][y]>=0 and hue[x][y]<0.05):
                     hue[x][y] = 1
-                else:
-                    hue[x][y]=0
+                # else:
+                #     hue[x][y]=0
                 if saturation[x][y] < 0.25:  # Achromatic area
                     hue[x][y] = 0
                 if value[x][y] < 0.2 or value[x][y] > 0.9:  # Achromatic area

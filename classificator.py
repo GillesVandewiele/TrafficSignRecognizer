@@ -73,6 +73,7 @@ def classify_traffic_signs(k, excel_path):
 
     # Decide on indices of training and validation data using k-fold cross validation
     """len(train_images)"""
+    #kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
     kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
 
     # Predict
@@ -93,12 +94,11 @@ def classify_traffic_signs(k, excel_path):
 
             # First we extract all features that got smth to do with color
             hue = color_extractor.extract_hue(image)
-            feature_vector = color_extractor.calculate_histogram(hue, 2)
+            feature_vector = color_extractor.calculate_histogram(hue, 20)
 
             #TODO: extract shape features and extend the feature_vector
             shape_features = shape_extractor.predictShape(hue)
-            print(shape_features)
-            feature_vector.exend(shape_features) 
+            feature_vector.extend(shape_features)
 
             #TODO: extract symbol/icon features
 
@@ -116,10 +116,11 @@ def classify_traffic_signs(k, excel_path):
         clf.fit(feature_vectors, train_set_results)
 
         prediction_object = Prediction()
-        for image in validation_set:
-            print("Predicting ", image, "...")
-            hue = color_extractor.extract_hue(image)
-            validation_feature_vector = color_extractor.calculate_histogram(hue, 2)
+        for im in validation_set:
+            print("Predicting ", im, "...")
+            hue = color_extractor.extract_hue(im)
+            validation_feature_vector = color_extractor.calculate_histogram(hue, 20)
+            validation_feature_vector.extend(shape_extractor.predictShape(hue))
             print(clf.predict_proba(validation_feature_vector)[0])
             prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 

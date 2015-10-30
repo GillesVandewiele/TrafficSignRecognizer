@@ -41,11 +41,11 @@ class ColorPredictor(Predictor):
             print("Training ", trainingData[element], "...")
 
             if results[element] not in self.histograms:
-                self.histograms[results[element]] = self.extract_hue_histogram(trainingData[element])[0]
+                self.histograms[results[element]] = self.extract_hue(trainingData[element])[0]
                 counters[results[element]] = 1
             else:
                 self.histograms[results[element]] = [ x + y for x, y in zip(self.histograms[results[element]],
-                                                                            self.extract_hue_histogram(trainingData[element])[0]) ]
+                                                                            self.extract_hue(trainingData[element])[0]) ]
                 counters[results[element]] += 1
 
         for element in self.histograms:
@@ -65,7 +65,16 @@ class ColorPredictor(Predictor):
                    .swapaxes(1,2)
                    .reshape(-1, nrows, ncols))
 
-    def extract_hue_histogram(self, element):
+    def calculate_histogram(self, hue):
+        hist = histogram(hue, bins=20, range=(0, 1))
+
+        # DEBUG: Save our results
+        ##imsave(element[:-4]+'test.png', asarray(hue))
+
+        # Red 250, Yellow 35, Blue 150-160
+        return [x/sum(hist[0]) for x in hist[0]]
+
+    def extract_hue(self, element):
 
         # Read image as array with RGB values
         img = imread(element)
@@ -110,21 +119,18 @@ class ColorPredictor(Predictor):
             for y in range(len(hue[x])):
                 if (hue[x][y]>0.95 and hue[x][y]<=1) or (hue[x][y]>=0 and hue[x][y]<0.05):
                     hue[x][y] = 1
+                else:
+                    hue[x][y]=0
                 if saturation[x][y] < 0.25:  # Achromatic area
                     hue[x][y] = 0
                 if value[x][y] < 0.2 or value[x][y] > 0.9:  # Achromatic area
                     hue[x][y] = 0
 
-        # Get the histogram of the hue values, normalize it and return it
-        hist = histogram(hue, bins=20, range=(0, 1))
-
-        # DEBUG: Save our results
-        #imsave(element[:-4]+'test.png', asarray(hue))
-
-        # Red 250, Yellow 35, Blue 150-160
-        return [[x/sum(hist[0]) for x in hist[0]], hist[1]]
-
         # TODO: apply region growing algorithm for even better performance!!
+
+        ##imsave(element[:-4]+'test.png', asarray(hue))
+
+        return hue
 
 
     def getChanceOnColor(self, color, histogram):
@@ -144,7 +150,7 @@ class ColorPredictor(Predictor):
 
         print("Predicting ", image, "...")
 
-        hist = self.extract_hue_histogram(image)
+        hist = self.extract_hue(image)
 
         # Extract histogram
         hist = [x/sum(hist[0]) for x in hist[0]]

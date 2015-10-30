@@ -1,10 +1,12 @@
 import colorsys
 import operator
 import math
+import numpy
 from numpy import histogram, asarray, pad
 from skimage.io import imread, imsave
 from predict.predictor import Predictor
 from skimage.transform import resize
+from predict.shapepredictor import ShapePredictor
 __author__ = 'Group 16'
 
 """

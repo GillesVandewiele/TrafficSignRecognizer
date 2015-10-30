@@ -5,6 +5,7 @@ from sklearn.svm import SVC
 from inout.fileparser import FileParser
 from predict.colorpredictor import ColorPredictor
 from predict.prediction import Prediction
+from predict.shapepredictor import ShapePredictor
 
 __author__ = 'Group16'
 
@@ -85,6 +86,7 @@ def classify_traffic_signs(k, excel_path):
         # Iterate over the training set and transform each input vector to a feature vector
         feature_vectors = []
         color_extractor = ColorPredictor()
+        shape_extractor = ShapePredictor()
         for image in train_set:
 
             print("Training ", image, "...")
@@ -94,6 +96,9 @@ def classify_traffic_signs(k, excel_path):
             feature_vector = color_extractor.calculate_histogram(hue, 2)
 
             #TODO: extract shape features and extend the feature_vector
+            shape_features = shape_extractor.predictShape(hue)
+            print(shape_features)
+            feature_vector.exend(shape_features)
 
             #TODO: extract symbol/icon features
 

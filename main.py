@@ -8,6 +8,8 @@ from skimage.io import imread
 from predict.benchmark import BenchmarkPredictor
 from predict.colorpredictor import ColorPredictor
 from predict.prediction import Prediction
+from predict.shapepredictor import ShapePredictor
+
 
 __author__ = 'Group16'
 
@@ -19,7 +21,7 @@ __author__ = 'Group16'
     Commissioned by UGent, course Machine Learning
 
 """
-"""
+
 def get_results(train_images_dir):
         results = []
         for shapesDirectory in os.listdir(train_images_dir):
@@ -32,7 +34,7 @@ def get_results(train_images_dir):
 # Directory of our training data (it's a mess in python...)
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
 test_images_dir = os.path.join(os.path.dirname(__file__), "test")
-
+"""
 # Get the results of the training data & a list of all images
 results = get_results(train_images_dir)
 train_images = []
@@ -49,8 +51,7 @@ for root, subFolders, files in os.walk(test_images_dir):
 k = 2
 number_images = len(train_images)
 kf = KFold(100, n_folds=k, shuffle=True, random_state=1337)
-"""
-"""
+
 # Benchmark predictor
 pred = BenchmarkPredictor()
 avg_logloss = 0
@@ -69,8 +70,9 @@ for train, validation in kf:
     avg_logloss += prediction_object.evaluate(validation_set_results)
 
 print("Average logloss score of the benchmark predictor using ", k, " folds: ", avg_logloss/k)
-"""
-"""
+
+
+
 train_images = train_images[0:100]
 results = results[0:100]
 
@@ -96,12 +98,15 @@ for train, validation in kf:
     avg_logloss += prediction_object.evaluate(validation_set_results)
 
 print("Average logloss score of the color predictor using ", k, " folds: ", avg_logloss/k)
+
 """
-"""
+
 pred = ColorPredictor()
-pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "test.png"))
-pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "00917_11555.png"))
-"""
+path = 'C:\\Users\Tim Deweert\Documents\GitHub\TrafficSignRecognizer'
+os.chdir(path);
+#pred.extract_hue_histogram(os.path.join(os.path.dirname(__file__), "test.png"))
+pred.extract_hue_histogram(os.path.join(path,"train","blue_circles","D10", "00181_07208.png"))
+
 
 
 # Run it on the test set and write out the output in the required format

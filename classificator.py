@@ -98,7 +98,7 @@ def classify_traffic_signs(k, excel_path):
             #TODO: extract shape features and extend the feature_vector
             shape_features = shape_extractor.predictShape(hue)
             print(shape_features)
-            feature_vector.exend(shape_features)
+            feature_vector.exend(shape_features) 
 
             #TODO: extract symbol/icon features
 

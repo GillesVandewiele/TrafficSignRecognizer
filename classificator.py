@@ -73,7 +73,9 @@ def classify_traffic_signs(k, excel_path):
 
     # Decide on indices of training and validation data using k-fold cross validation
     """len(train_images)"""
-    kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
+    kf = KFold(100, n_folds=k, shuffle=True, random_state=1337)
+    train_images = train_images[500:600]
+    results = results[500:600]
 
     # Predict
     avg_logloss = 0
@@ -98,7 +100,7 @@ def classify_traffic_signs(k, excel_path):
             #TODO: extract shape features and extend the feature_vector
             shape_features = shape_extractor.predictShape(hue)
             print(shape_features)
-            feature_vector.exend(shape_features) 
+            #feature_vector.extend(shape_features)
 
             #TODO: extract symbol/icon features
 

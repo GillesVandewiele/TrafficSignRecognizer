@@ -22,7 +22,8 @@ __author__ = 'Group16'
 class ShapePredictor():
 
     @staticmethod
-    def predictShape(img):
+    def predictShape(hue):
+            img = (np.rint(asarray(hue)*255)).astype(np.uint8)
             ret, thresh = cv2.threshold(img, 127, 255,0)
             imgg, contours, hierarchy = cv2.findContours(thresh,2,1)
             if len(contours) == 0:

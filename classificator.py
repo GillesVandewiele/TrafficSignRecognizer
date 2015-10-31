@@ -1,5 +1,5 @@
 import os
-import cv2
+# import cv2
 from numpy import asarray, pad, resize, append
 from skimage.io import imread
 from sklearn.cross_validation import KFold
@@ -11,6 +11,8 @@ from predict.shapepredictor import ShapePredictor
 from skimage.feature import hog
 from skimage import color, exposure
 import matplotlib.pyplot as plt
+#from predict.shapepredictor import ShapePredictor
+from predict.symbolpredictor import SymbolPredictor
 
 __author__ = 'Group16'
 
@@ -95,24 +97,29 @@ def classify_traffic_signs(k):
         validation_set_results = [results[i] for i in validation]
         # Iterate over the training set and transform each input vector to a feature vector
         feature_vectors = []
+
         color_extractor = ColorFeatureExtractor()
-        shape_extractor = ShapePredictor()
+        #shape_extractor = ShapePredictor()
+        symbol_extractor = SymbolPredictor()
+        #print(transform_classes(train_set_results))
+
         for image in train_set:
 
             print("Training ", image, "...")
 
-            feature_vector = color_extractor.extract_hog(image)
-            #print(len(feature_vector))
-
-            # First we extract the color features
-            hue = color_extractor.extract_hue(image)
-            feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
-
-            # Then we add the shape_features
-            shape_features = shape_extractor.predictShape(hue)
-            feature_vector = append(feature_vector, shape_features)
+            # feature_vector = color_extractor.extract_hog(image)
+            # #print(len(feature_vector))
+            #
+            # # First we extract the color features
+            # hue = color_extractor.extract_hue(image)
+            # feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
+            #
+            # # Then we add the shape_features
+            # shape_features = shape_extractor.predictShape(hue)
+            # feature_vector = append(feature_vector, shape_features)
 
             #TODO: extract symbol/icon features
+            feature_vector = symbol_extractor.calculateDCT(image)
 
 
             feature_vectors.append(feature_vector)
@@ -130,17 +137,26 @@ def classify_traffic_signs(k):
         for im in validation_set:
             print("Predicting ", im, "...")
 
-            validation_feature_vector = color_extractor.extract_hog(im)
-
-            # Extract the same color features as the training phase
-            hue = color_extractor.extract_hue(im)
-            validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
-
-            # And the same shape features
-            shape_features = shape_extractor.predictShape(hue)
-            validation_feature_vector = append(validation_feature_vector, shape_features)
+            # validation_feature_vector = color_extractor.extract_hog(im)
+            #
+            # # Extract the same color features as the training phase
+            # hue = color_extractor.extract_hue(im)
+            # validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+            #
+            # # And the same shape features
+            # shape_features = shape_extractor.predictShape(hue)
+            # validation_feature_vector = append(validation_feature_vector, shape_features)
 
             #print(clf.predict_proba(validation_feature_vector)[0])
+            #hue = color_extractor.extract_hue(im)
+            #hue_binary = color_extractor.extract_hue(im, binary=True)
+            #validation_feature_vector = color_extractor.calculate_histogram(hue_binary, 2)
+            #mom = cv2.moments(asarray(hue).flatten())
+            #hu = cv2.HuMoments(mom)
+            #validation_feature_vector = hu
+            #validation_feature_vector.append(shape_extractor.predictShape(hue))
+            validation_feature_vector = symbol_extractor.calculateDCT(im)
+            print(clf.predict_proba(validation_feature_vector)[0])
             prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 
@@ -150,9 +166,9 @@ def classify_traffic_signs(k):
 
     print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss/k)
 
-#classify_traffic_signs(2)
+classify_traffic_signs(2)
 
-
+"""
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
 test_images_dir = os.path.join(os.path.dirname(__file__), "test")
 
@@ -190,7 +206,7 @@ for im in test_images:
     prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 FileParser.write_CSV("submission.xlsx", prediction_object)
-
+"""
 """
 image = color.rgb2gray(imread(os.path.join(os.path.dirname(__file__), "00129_02203.png")))
 

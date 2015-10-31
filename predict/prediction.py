@@ -158,8 +158,13 @@ class Prediction(object):
         logloss = 0
         counter = 0
         results_indices = sorted(set(results))
+        print(results_indices)
         for prediction in self.predictions:
-            p = max(min(prediction[results_indices.index(results[counter])-1], 1-pow(10, -15)), pow(10, -15))
+            print(results[counter])
+            p = max(min(prediction[results_indices.index(results[counter])], 1-pow(10, -15)), pow(10, -15))
+            print(prediction)
+            print(results_indices.index(results[counter]))
+            print(prediction[results_indices.index(results[counter])-1])
             logloss += math.log(p)
             counter += 1
 

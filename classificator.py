@@ -81,9 +81,9 @@ def classify_traffic_signs(k):
     # Decide on indices of training and validation data using k-fold cross validation
     """len(train_images)"""
     kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
-    #kf = KFold(300, n_folds=k, shuffle=True, random_state=1337)
-    #train_images=train_images[650:950]
-    #results=results[650:950]
+    # kf = KFold(500, n_folds=k, shuffle=True, random_state=1337)
+    # train_images=train_images[660:1160]
+    # results=results[660:1160]
 
     # Predict
     avg_logloss = 0
@@ -102,14 +102,15 @@ def classify_traffic_signs(k):
             print("Training ", image, "...")
 
             feature_vector = color_extractor.extract_hog(image)
+            #print(len(feature_vector))
 
             # First we extract the color features
-            #hue = color_extractor.extract_hue(image)
-            #feature_vector = color_extractor.calculate_histogram(hue, 20)
+            hue = color_extractor.extract_hue(image)
+            feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
 
             # Then we add the shape_features
-            #shape_features = shape_extractor.predictShape(hue)
-            #feature_vector = append(feature_vector, shape_features)
+            shape_features = shape_extractor.predictShape(hue)
+            feature_vector = append(feature_vector, shape_features)
 
             #TODO: extract symbol/icon features
 
@@ -131,14 +132,14 @@ def classify_traffic_signs(k):
             validation_feature_vector = color_extractor.extract_hog(im)
 
             # Extract the same color features as the training phase
-            #hue = color_extractor.extract_hue(im)
-            #validation_feature_vector = color_extractor.calculate_histogram(hue, 20)
+            hue = color_extractor.extract_hue(im)
+            validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
 
             # And the same shape features
-            #shape_features = shape_extractor.predictShape(hue)
-            #validation_feature_vector = append(validation_feature_vector, shape_features)
+            shape_features = shape_extractor.predictShape(hue)
+            validation_feature_vector = append(validation_feature_vector, shape_features)
 
-            print(clf.predict_proba(validation_feature_vector)[0])
+            #print(clf.predict_proba(validation_feature_vector)[0])
             prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 

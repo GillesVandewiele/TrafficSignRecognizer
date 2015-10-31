@@ -23,7 +23,7 @@ class ColorFeatureExtractor(Predictor):
 
     def extract_hog(self, element):
         image = resize(color.rgb2gray(imread(element)), (64, 64))
-        fd = hog(image, orientations=9, pixels_per_cell=(2, 2),
+        fd = hog(image, orientations=9, pixels_per_cell=(16, 16),
                  cells_per_block=(1, 1), normalise=True)
         return fd.tolist()
 

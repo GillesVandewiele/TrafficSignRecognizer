@@ -5,9 +5,12 @@ from skimage.io import imread
 from sklearn.cross_validation import KFold
 from sklearn.svm import SVC
 from inout.fileparser import FileParser
-from predict.colorpredictor import ColorPredictor
+from predict.colorfeatureextractor import ColorFeatureExtractor
 from predict.prediction import Prediction
 from predict.shapepredictor import ShapePredictor
+from skimage.feature import hog
+from skimage import color, exposure
+import matplotlib.pyplot as plt
 
 __author__ = 'Group16'
 
@@ -65,7 +68,7 @@ def transform_classes(results):
             new_classes.append("others")
     return new_classes
 
-def classify_traffic_signs(k, excel_path):
+def classify_traffic_signs(k):
     # Get the images and results from the directories train and test
     train_images_dir = os.path.join(os.path.dirname(__file__), "train")
     test_images_dir = os.path.join(os.path.dirname(__file__), "test")
@@ -77,10 +80,10 @@ def classify_traffic_signs(k, excel_path):
 
     # Decide on indices of training and validation data using k-fold cross validation
     """len(train_images)"""
-    #kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
-    kf = KFold(300, n_folds=k, shuffle=True, random_state=1337)
-    train_images=train_images[600:900]
-    results=results[600:900]
+    kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
+    #kf = KFold(300, n_folds=k, shuffle=True, random_state=1337)
+    #train_images=train_images[650:950]
+    #results=results[650:950]
 
     # Predict
     avg_logloss = 0
@@ -92,28 +95,19 @@ def classify_traffic_signs(k, excel_path):
         validation_set_results = [results[i] for i in validation]
         # Iterate over the training set and transform each input vector to a feature vector
         feature_vectors = []
-        color_extractor = ColorPredictor()
+        color_extractor = ColorFeatureExtractor()
         shape_extractor = ShapePredictor()
-        print(transform_classes(train_set_results))
         for image in train_set:
 
             print("Training ", image, "...")
 
-            # First we extract all features that got smth to do with color
-            #hue = color_extractor.extract_hue(image)
-            hue_binary = color_extractor.extract_hue(image, binary=True)
-            feature_vector = color_extractor.calculate_histogram(hue_binary, 2)
-            #hue = resize(hue, (32, 32))
-            #mom = cv2.moments(asarray(hue))
-            #print(mom)
-            #hu = cv2.HuMoments(mom)
-            #print(hu)
-            #feature_vector = hu.flatten()
-            #print(hu)
+            # First we extract the color features
+            hue = color_extractor.extract_hue(image)
+            feature_vector = color_extractor.calculate_histogram(hue, 10)
 
-            #TODO: extract shape features and extend the feature_vector
-            #shape_features = shape_extractor.predictShape(hue)
-            #feature_vector = append(feature_vector, shape_features)
+            # Then we add the shape_features
+            shape_features = shape_extractor.predictShape(hue)
+            feature_vector = append(feature_vector, shape_features)
 
             #TODO: extract symbol/icon features
 
@@ -125,37 +119,54 @@ def classify_traffic_signs(k, excel_path):
         # Allocate 1 GB of memory for our kernel
         # We are using seed 1337 to always get the same results (can be put on None for testing)
         clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
-          random_state=1337, shrinking=False, tol=0.001, verbose=False)
-        clf.fit(feature_vectors, transform_classes(train_set_results))
+                  random_state=1337, shrinking=False, tol=0.001, verbose=False)
+        clf.fit(feature_vectors, train_set_results)
 
         prediction_object = Prediction()
         print("test")
         for im in validation_set:
             print("Predicting ", im, "...")
-            #hue = color_extractor.extract_hue(im)
-            hue_binary = color_extractor.extract_hue(im, binary=True)
-            validation_feature_vector = color_extractor.calculate_histogram(hue_binary, 2)
-            #mom = cv2.moments(asarray(hue).flatten())
-            #hu = cv2.HuMoments(mom)
-            #validation_feature_vector = hu
-            #validation_feature_vector.append(shape_extractor.predictShape(hue))
+
+            # Extract the same color features as the training phase
+            hue = color_extractor.extract_hue(im)
+            validation_feature_vector = color_extractor.calculate_histogram(hue, 10)
+
+            # And the same shape features
+            shape_features = shape_extractor.predictShape(hue)
+            validation_feature_vector = append(validation_feature_vector, shape_features)
+
             print(clf.predict_proba(validation_feature_vector)[0])
             prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 
         # Evaluate and add to logloss
-        print(prediction_object.evaluate(transform_classes(validation_set_results)))
-        avg_logloss += prediction_object.evaluate(transform_classes(validation_set_results))
+        print(prediction_object.evaluate(validation_set_results))
+        avg_logloss += prediction_object.evaluate(validation_set_results)
 
     print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss/k)
-    FileParser.write_CSV(excel_path, prediction_object)
+
+classify_traffic_signs(2)
+
+
 """
-fgbg = cv2.createBackgroundSubtractorMOG2(detectShadows=False)
-frame = imread(os.path.join(os.path.dirname(__file__), "00129_02203.png"))
-cv2.imshow('frame', frame)
-input("")
-fgmask = fgbg.apply(frame)
-cv2.imshow('frame',fgmask)
-input("Press Enter to continue...")
+image = color.rgb2gray(imread(os.path.join(os.path.dirname(__file__), "00129_02203.png")))
+
+fd, hog_image = hog(image, orientations=8, pixels_per_cell=(16, 16),
+                    cells_per_block=(1, 1), visualise=True)
+
+print(fd, hog_image)
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
+
+ax1.axis('off')
+ax1.imshow(image, cmap=plt.cm.gray)
+ax1.set_title('Input image')
+
+# Rescale histogram for better display
+hog_image_rescaled = exposure.rescale_intensity(hog_image, in_range=(0, 0.02))
+
+ax2.axis('off')
+ax2.imshow(hog_image_rescaled, cmap=plt.cm.gray)
+ax2.set_title('Histogram of Oriented Gradients')
+plt.show()
 """
-classify_traffic_signs(2, "testing.xlsx")

@@ -6,7 +6,7 @@ from inout.fileparser import FileParser
 from skimage.io import imread
 
 from predict.benchmark import BenchmarkPredictor
-from predict.colorpredictor import ColorPredictor
+from predict.colorfeatureextractor import ColorFeatureExtractor
 from predict.prediction import Prediction
 
 __author__ = 'Group16'
@@ -127,5 +127,5 @@ clf = SVC(C=1.0, cache_size=1000, class_weight=None, kernel='linear', max_iter=-
           random_state=1337, shrinking=False, tol=0.001, verbose=False)
 clf.fit(X, y)
 print(clf.predict_proba([[-0.8, -1, 1]]))
-pred = ColorPredictor()
+pred = ColorFeatureExtractor()
 pred.extract_hue(os.path.join(os.path.dirname(__file__), "01856_06592.png"))

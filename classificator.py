@@ -114,6 +114,7 @@ def classify_traffic_signs(k):
 
             #TODO: extract symbol/icon features
 
+
             feature_vectors.append(feature_vector)
 
         # We use C-SVM with a linear kernel and want to predict probabilities
@@ -149,8 +150,46 @@ def classify_traffic_signs(k):
 
     print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss/k)
 
-classify_traffic_signs(2)
+#classify_traffic_signs(2)
 
+
+train_images_dir = os.path.join(os.path.dirname(__file__), "train")
+test_images_dir = os.path.join(os.path.dirname(__file__), "test")
+
+train_images = get_images_from_directory(train_images_dir)
+test_images = get_images_from_directory(test_images_dir)
+results = get_results(train_images_dir)
+
+# Training phase
+feature_vectors = []
+color_extractor = ColorFeatureExtractor()
+shape_extractor = ShapePredictor()
+
+for image in train_images:
+    feature_vector = color_extractor.extract_hog(image)
+    feature_vectors.append(feature_vector)
+    hue = color_extractor.extract_hue(image)
+    feature_vectors.append(color_extractor.calculate_histogram(hue, 20))
+    shape_features = shape_extractor.predictShape(hue)
+    feature_vectors.append(shape_features)
+
+clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
+                  random_state=None, shrinking=False, tol=0.001, verbose=False)
+clf.fit(feature_vectors, results)
+
+# Testing phase
+prediction_object = Prediction()
+for im in test_images:
+    validation_feature_vector = color_extractor.extract_hog(im)
+    # Extract the same color features as the training phase
+    hue = color_extractor.extract_hue(image)
+    validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+    # And the same shape features
+    shape_features = shape_extractor.predictShape(hue)
+    validation_feature_vector = append(validation_feature_vector, shape_features)
+    prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
+
+FileParser.write_CSV("submission.xlsx", prediction_object)
 
 """
 image = color.rgb2gray(imread(os.path.join(os.path.dirname(__file__), "00129_02203.png")))

@@ -7,6 +7,7 @@ from pylab import *
 import matplotlib.pyplot as plt
 from skimage.morphology import convex_hull_image
 from predict.predictor import Predictor
+from predict.zernikemoments import ZernikeMoments
 
 __author__ = 'Group16'
 
@@ -24,6 +25,7 @@ class ShapePredictor():
     @staticmethod
     def predictShape(hue):
             img = (np.rint(asarray(hue)*255)).astype(np.uint8)
+            img = resize(img,(64,64))
             ret, thresh = cv2.threshold(img, 127, 255,0)
             imgg, contours, hierarchy = cv2.findContours(thresh,cv2.RETR_EXTERNAL,1)
             if len(contours) == 0:
@@ -37,6 +39,11 @@ class ShapePredictor():
                     index = i
             contour = contours[index]
 
+            desc = ZernikeMoments(21)
+            moments = desc.describe(contour)
+            return moments
+            
+            """
             mu = cv2.moments(contour,False)
 
             #The zero order central moment is zero so no shape can be predicted
@@ -75,5 +82,6 @@ class ShapePredictor():
             R = area / areaMinRect
 
             return[E,T,O,R]
+            """
 
-
+#3.4109452905384194

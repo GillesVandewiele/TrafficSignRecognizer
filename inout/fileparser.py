@@ -31,6 +31,8 @@ class FileParser:
 
         worksheet.write(0,0, "id")
 
+        print(predictionObject)
+
         # Write out first row (all traffic signs)
         signCounter = 0
         for trafficSign in sorted(predictionObject.TRAFFIC_SIGNS):
@@ -43,8 +45,8 @@ class FileParser:
             worksheet.write(predictionCounter+1, 0, predictionCounter+1)
 
             signCounter = 0
-            for trafficSign in sorted(predictionObject.TRAFFIC_SIGNS):
-                worksheet.write(predictionCounter+1, signCounter+1, prediction[trafficSign])
+            for trafficSign in prediction:
+                worksheet.write(predictionCounter+1, signCounter+1, trafficSign)
                 signCounter += 1
 
             predictionCounter += 1

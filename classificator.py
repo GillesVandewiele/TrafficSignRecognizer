@@ -1,5 +1,5 @@
 import os
-import cv2
+# import cv2
 from numpy import asarray, pad, resize, append
 from skimage.io import imread
 from sklearn.cross_validation import KFold
@@ -7,7 +7,8 @@ from sklearn.svm import SVC
 from inout.fileparser import FileParser
 from predict.colorpredictor import ColorPredictor
 from predict.prediction import Prediction
-from predict.shapepredictor import ShapePredictor
+#from predict.shapepredictor import ShapePredictor
+from predict.symbolpredictor import SymbolPredictor
 
 __author__ = 'Group16'
 
@@ -93,16 +94,17 @@ def classify_traffic_signs(k, excel_path):
         # Iterate over the training set and transform each input vector to a feature vector
         feature_vectors = []
         color_extractor = ColorPredictor()
-        shape_extractor = ShapePredictor()
-        print(transform_classes(train_set_results))
+        #shape_extractor = ShapePredictor()
+        symbol_extractor = SymbolPredictor()
+        #print(transform_classes(train_set_results))
         for image in train_set:
 
             print("Training ", image, "...")
 
             # First we extract all features that got smth to do with color
             #hue = color_extractor.extract_hue(image)
-            hue_binary = color_extractor.extract_hue(image, binary=True)
-            feature_vector = color_extractor.calculate_histogram(hue_binary, 2)
+            #hue_binary = color_extractor.extract_hue(image, binary=True)
+            #feature_vector = color_extractor.calculate_histogram(hue_binary, 2)
             #hue = resize(hue, (32, 32))
             #mom = cv2.moments(asarray(hue))
             #print(mom)
@@ -116,6 +118,7 @@ def classify_traffic_signs(k, excel_path):
             #feature_vector = append(feature_vector, shape_features)
 
             #TODO: extract symbol/icon features
+            feature_vector = symbol_extractor.calculateDCT(image)
 
             feature_vectors.append(feature_vector)
 
@@ -126,26 +129,30 @@ def classify_traffic_signs(k, excel_path):
         # We are using seed 1337 to always get the same results (can be put on None for testing)
         clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
           random_state=1337, shrinking=False, tol=0.001, verbose=False)
-        clf.fit(feature_vectors, transform_classes(train_set_results))
+        #clf.fit(feature_vectors, transform_classes(train_set_results))
+        clf.fit(feature_vectors, train_set_results)
 
         prediction_object = Prediction()
         print("test")
         for im in validation_set:
             print("Predicting ", im, "...")
             #hue = color_extractor.extract_hue(im)
-            hue_binary = color_extractor.extract_hue(im, binary=True)
-            validation_feature_vector = color_extractor.calculate_histogram(hue_binary, 2)
+            #hue_binary = color_extractor.extract_hue(im, binary=True)
+            #validation_feature_vector = color_extractor.calculate_histogram(hue_binary, 2)
             #mom = cv2.moments(asarray(hue).flatten())
             #hu = cv2.HuMoments(mom)
             #validation_feature_vector = hu
             #validation_feature_vector.append(shape_extractor.predictShape(hue))
+            validation_feature_vector = symbol_extractor.calculateDCT(im)
             print(clf.predict_proba(validation_feature_vector)[0])
             prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 
         # Evaluate and add to logloss
-        print(prediction_object.evaluate(transform_classes(validation_set_results)))
-        avg_logloss += prediction_object.evaluate(transform_classes(validation_set_results))
+        #print(prediction_object.evaluate(transform_classes(validation_set_results)))
+        #avg_logloss += prediction_object.evaluate(transform_classes(validation_set_results))
+        print(prediction_object.evaluate(validation_set_results))
+        avg_logloss += prediction_object.evaluate(validation_set_results)
 
     print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss/k)
     FileParser.write_CSV(excel_path, prediction_object)

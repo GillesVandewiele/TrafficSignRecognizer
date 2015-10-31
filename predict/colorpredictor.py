@@ -59,7 +59,7 @@ class ColorPredictor(Predictor):
         # Red 250, Yellow 35, Blue 150-160
         return [x/sum(hist[0]) for x in hist[0]]
 
-    def extract_hue(self, element):
+    def extract_hue(self, element, binary=False):
 
         # Read image as array with RGB values
         img = imread(element)
@@ -104,8 +104,9 @@ class ColorPredictor(Predictor):
             for y in range(len(hue[x])):
                 if (hue[x][y]>0.95 and hue[x][y]<=1) or (hue[x][y]>=0 and hue[x][y]<0.05):
                     hue[x][y] = 1
-                else:
+                elif binary:
                     hue[x][y]=0
+
                 if saturation[x][y] < 0.25:  # Achromatic area
                     hue[x][y] = 0
                 if value[x][y] < 0.2 or value[x][y] > 0.9:  # Achromatic area

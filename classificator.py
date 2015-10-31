@@ -166,12 +166,21 @@ color_extractor = ColorFeatureExtractor()
 shape_extractor = ShapePredictor()
 
 for image in train_images:
+    print(image)
     feature_vector = color_extractor.extract_hog(image)
-    feature_vectors.append(feature_vector)
+    #print(len(feature_vector))
+
+    # First we extract the color features
     hue = color_extractor.extract_hue(image)
-    feature_vectors.append(color_extractor.calculate_histogram(hue, 20))
+    feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
+
+    # Then we add the shape_features
     shape_features = shape_extractor.predictShape(hue)
-    feature_vectors.append(shape_features)
+    feature_vector = append(feature_vector, shape_features)
+
+    #TODO: extract symbol/icon features
+
+    feature_vectors.append(feature_vector)
 
 clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
                   random_state=None, shrinking=False, tol=0.001, verbose=False)
@@ -180,6 +189,7 @@ clf.fit(feature_vectors, results)
 # Testing phase
 prediction_object = Prediction()
 for im in test_images:
+    print(im)
     validation_feature_vector = color_extractor.extract_hog(im)
     # Extract the same color features as the training phase
     hue = color_extractor.extract_hue(image)

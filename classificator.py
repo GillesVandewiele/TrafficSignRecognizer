@@ -101,13 +101,15 @@ def classify_traffic_signs(k):
 
             print("Training ", image, "...")
 
+            feature_vector = color_extractor.extract_hog(image)
+
             # First we extract the color features
-            hue = color_extractor.extract_hue(image)
-            feature_vector = color_extractor.calculate_histogram(hue, 10)
+            #hue = color_extractor.extract_hue(image)
+            #feature_vector = color_extractor.calculate_histogram(hue, 20)
 
             # Then we add the shape_features
-            shape_features = shape_extractor.predictShape(hue)
-            feature_vector = append(feature_vector, shape_features)
+            #shape_features = shape_extractor.predictShape(hue)
+            #feature_vector = append(feature_vector, shape_features)
 
             #TODO: extract symbol/icon features
 
@@ -123,17 +125,18 @@ def classify_traffic_signs(k):
         clf.fit(feature_vectors, train_set_results)
 
         prediction_object = Prediction()
-        print("test")
         for im in validation_set:
             print("Predicting ", im, "...")
 
+            validation_feature_vector = color_extractor.extract_hog(im)
+
             # Extract the same color features as the training phase
-            hue = color_extractor.extract_hue(im)
-            validation_feature_vector = color_extractor.calculate_histogram(hue, 10)
+            #hue = color_extractor.extract_hue(im)
+            #validation_feature_vector = color_extractor.calculate_histogram(hue, 20)
 
             # And the same shape features
-            shape_features = shape_extractor.predictShape(hue)
-            validation_feature_vector = append(validation_feature_vector, shape_features)
+            #shape_features = shape_extractor.predictShape(hue)
+            #validation_feature_vector = append(validation_feature_vector, shape_features)
 
             print(clf.predict_proba(validation_feature_vector)[0])
             prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
@@ -151,8 +154,8 @@ classify_traffic_signs(2)
 """
 image = color.rgb2gray(imread(os.path.join(os.path.dirname(__file__), "00129_02203.png")))
 
-fd, hog_image = hog(image, orientations=8, pixels_per_cell=(16, 16),
-                    cells_per_block=(1, 1), visualise=True)
+fd, hog_image = hog(image, orientations=8, pixels_per_cell=(4, 4),
+                    cells_per_block=(4, 4), visualise=True, normalise=True)
 
 print(fd, hog_image)
 

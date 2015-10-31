@@ -2,6 +2,8 @@ import colorsys
 import operator
 import math
 import numpy
+from skimage.feature import hog
+from skimage import color, exposure
 from numpy import histogram, asarray, pad
 from skimage.io import imread, imsave
 from predict.predictor import Predictor
@@ -18,6 +20,12 @@ __author__ = 'Group 16'
 """
 
 class ColorFeatureExtractor(Predictor):
+
+    def extract_hog(self, element):
+        image = resize(color.rgb2gray(imread(element)), (64, 64))
+        fd = hog(image, orientations=9, pixels_per_cell=(8, 8),
+                 cells_per_block=(1, 1), normalise=True)
+        return fd.tolist()
 
     def calculate_histogram(self, hue, bins=20):
         hist = histogram(hue, bins=bins, range=(0, 1))

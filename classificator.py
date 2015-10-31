@@ -1,5 +1,5 @@
 import os
-import cv2
+# import cv2
 from numpy import asarray, pad, resize, append
 from skimage.io import imread
 from sklearn.cross_validation import KFold
@@ -11,6 +11,8 @@ from predict.shapepredictor import ShapePredictor
 from skimage.feature import hog
 from skimage import color, exposure
 import matplotlib.pyplot as plt
+#from predict.shapepredictor import ShapePredictor
+from predict.symbolpredictor import SymbolPredictor
 
 __author__ = 'Group16'
 
@@ -78,9 +80,9 @@ def classify_traffic_signs(k):
     # Decide on indices of training and validation data using k-fold cross validation
     """len(train_images)"""
     kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
-    #kf = KFold(300, n_folds=k, shuffle=True, random_state=1337)
-    #train_images=train_images[650:950]
-    #results=results[650:950]
+    # kf = KFold(500, n_folds=k, shuffle=True, random_state=1337)
+    # train_images=train_images[660:1160]
+    # results=results[660:1160]
 
     # Predict
     avg_logloss = 0
@@ -92,13 +94,21 @@ def classify_traffic_signs(k):
         validation_set_results = [results[i] for i in validation]
         # Iterate over the training set and transform each input vector to a feature vector
         feature_vectors = []
+
         color_extractor = ColorFeatureExtractor()
         shape_extractor = ShapePredictor()
+        symbol_extractor = SymbolPredictor()
+        #print(transform_classes(train_set_results))
+
         for image in train_set:
 
             print("Training ", image, "...")
 
+            feature_vector = color_extractor.extract_hog(image)
+            # print(len(feature_vector))
+            #
             # First we extract the color features
+<<<<<<< HEAD
             hue = color_extractor.extract_hue(image)
             #feature_vector = color_extractor.calculate_histogram(hue, 10)
 
@@ -106,8 +116,18 @@ def classify_traffic_signs(k):
             shape_features = shape_extractor.predictShape(hue)
             #feature_vector = append(feature_vector, shape_features)
             feature_vector = shape_features
+=======
+            # hue = color_extractor.extract_hue(image)
+            # feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 40))
+            # #
+            # # Then we add the shape_features
+            # shape_features = shape_extractor.predictShape(hue)
+            # feature_vector = append(feature_vector, shape_features)
+>>>>>>> gilles
 
             #TODO: extract symbol/icon features
+            #feature_vector = symbol_extractor.calculateDCT(image)
+
 
             feature_vectors.append(feature_vector)
 
@@ -121,10 +141,10 @@ def classify_traffic_signs(k):
         clf.fit(feature_vectors, train_set_results)
 
         prediction_object = Prediction()
-        print("test")
         for im in validation_set:
             print("Predicting ", im, "...")
 
+<<<<<<< HEAD
             # Extract the same color features as the training phase
             hue = color_extractor.extract_hue(im)
             #validation_feature_vector = color_extractor.calculate_histogram(hue, 10)
@@ -135,6 +155,28 @@ def classify_traffic_signs(k):
             validation_feature_vector = shape_features
 
             #print(clf.predict_proba(validation_feature_vector)[0])
+=======
+            validation_feature_vector = color_extractor.extract_hog(im)
+
+            # # Extract the same color features as the training phase
+            # hue = color_extractor.extract_hue(im)
+            # validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 40))
+            #
+            # # And the same shape features
+            # shape_features = shape_extractor.predictShape(hue)
+            # validation_feature_vector = append(validation_feature_vector, shape_features)
+
+            #print(clf.predict_proba(validation_feature_vector)[0])
+            #hue = color_extractor.extract_hue(im)
+            #hue_binary = color_extractor.extract_hue(im, binary=True)
+            #validation_feature_vector = color_extractor.calculate_histogram(hue_binary, 2)
+            #mom = cv2.moments(asarray(hue).flatten())
+            #hu = cv2.HuMoments(mom)
+            #validation_feature_vector = hu
+            #validation_feature_vector.append(shape_extractor.predictShape(hue))
+            #validation_feature_vector = symbol_extractor.calculateDCT(im)
+            #print(clf.predict_proba(validation_feature_vector)[0])
+>>>>>>> gilles
             prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 
@@ -146,11 +188,68 @@ def classify_traffic_signs(k):
 
 classify_traffic_signs(2)
 
+"""
+train_images_dir = os.path.join(os.path.dirname(__file__), "train")
+test_images_dir = os.path.join(os.path.dirname(__file__), "test")
+
+train_images = get_images_from_directory(train_images_dir)
+test_images = get_images_from_directory(test_images_dir)
+results = get_results(train_images_dir)
+
+# Training phase
+feature_vectors = []
+color_extractor = ColorFeatureExtractor()
+shape_extractor = ShapePredictor()
+
+for image in train_images:
+    print("Train: ", image)
+    feature_vector = color_extractor.extract_hog(image)
+    #print(len(feature_vector))
+
+    # First we extract the color features
+    #hue = color_extractor.extract_hue(image)
+    #feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
+
+    # Then we add the shape_features
+    #shape_features = shape_extractor.predictShape(hue)
+    #feature_vector = append(feature_vector, shape_features)
+
+    #TODO: extract symbol/icon features
+
+    feature_vectors.append(feature_vector)
+
+clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
+                  random_state=None, shrinking=False, tol=0.001, verbose=False)
+clf.fit(feature_vectors, results)
+
+# Testing phase
+prediction_object = Prediction()
+for im in test_images:
+    print("Predict: ", im)
+    validation_feature_vector = color_extractor.extract_hog(im)
+    # Extract the same color features as the training phase
+    #hue = color_extractor.extract_hue(im)
+    #validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+    # And the same shape features
+    #shape_features = shape_extractor.predictShape(hue)
+    #validation_feature_vector = append(validation_feature_vector, shape_features)
+    prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
+
+FileParser.write_CSV("submission.xlsx", prediction_object)
+"""
+
 
 """
 image = color.rgb2gray(imread(os.path.join(os.path.dirname(__file__), "00129_02203.png")))
+<<<<<<< HEAD
 fd, hog_image = hog(image, orientations=8, pixels_per_cell=(16, 16),
                     cells_per_block=(1, 1), visualise=True)
+=======
+
+fd, hog_image = hog(image, orientations=8, pixels_per_cell=(4, 4),
+                    cells_per_block=(4, 4), visualise=True, normalise=True)
+
+>>>>>>> gilles
 print(fd, hog_image)
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
 ax1.axis('off')

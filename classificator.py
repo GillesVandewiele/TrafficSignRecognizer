@@ -166,7 +166,6 @@ def classify_traffic_signs(k):
             #hu = cv2.HuMoments(mom)
             #validation_feature_vector = hu
             #validation_feature_vector.append(shape_extractor.predictShape(hue))
-            print(clf.predict_proba(validation_feature_vector)[0])
             prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 
@@ -192,12 +191,21 @@ color_extractor = ColorFeatureExtractor()
 shape_extractor = ShapePredictor()
 
 for image in train_images:
+    print("Train: ", image)
     feature_vector = color_extractor.extract_hog(image)
+    #print(len(feature_vector))
+
+    # First we extract the color features
+    #hue = color_extractor.extract_hue(image)
+    #feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
+
+    # Then we add the shape_features
+    #shape_features = shape_extractor.predictShape(hue)
+    #feature_vector = append(feature_vector, shape_features)
+
+    #TODO: extract symbol/icon features
+
     feature_vectors.append(feature_vector)
-    hue = color_extractor.extract_hue(image)
-    feature_vectors.append(color_extractor.calculate_histogram(hue, 20))
-    shape_features = shape_extractor.predictShape(hue)
-    feature_vectors.append(shape_features)
 
 clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
                   random_state=None, shrinking=False, tol=0.001, verbose=False)
@@ -206,17 +214,20 @@ clf.fit(feature_vectors, results)
 # Testing phase
 prediction_object = Prediction()
 for im in test_images:
+    print("Predict: ", im)
     validation_feature_vector = color_extractor.extract_hog(im)
     # Extract the same color features as the training phase
-    hue = color_extractor.extract_hue(image)
-    validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+    #hue = color_extractor.extract_hue(im)
+    #validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
     # And the same shape features
-    shape_features = shape_extractor.predictShape(hue)
-    validation_feature_vector = append(validation_feature_vector, shape_features)
+    #shape_features = shape_extractor.predictShape(hue)
+    #validation_feature_vector = append(validation_feature_vector, shape_features)
     prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 FileParser.write_CSV("submission.xlsx", prediction_object)
 """
+
+
 """
 image = color.rgb2gray(imread(os.path.join(os.path.dirname(__file__), "00129_02203.png")))
 

@@ -43,7 +43,7 @@ def get_images_from_directory(directory):
             images.append(os.path.join(root, file))
 
     return images
-
+#TODO: divide in 4 classes:
 def transform_classes(results):
     # Reduce the number of classes in the results for color classification, the resulting classes are:
     #   red signs (red_circles, stop, forbidden, others: F41)
@@ -53,17 +53,17 @@ def transform_classes(results):
     #   others (diamonds, others: F31, F35)
     new_classes = []
     for result in results:
-        if result in ["B19", "C3", "C11", "C21", "C23", "C29", "C31", "C35", "C43", "F4a", "F41", "C1", "B5",
-                      "B1", "B3", "B7", "E1", "E5", "E3", "E7", "A1AB", "A1CD", "A7A", "A7B", "A13", "A14", "A15",
-                      "A23", "A25", "A29", "A31", "A51", "B15A", "B17", "F43"]:
+        if result in ["B19", "C3", "C11", "C21", "C23", "C29", "C31", "C35", "C43", "F4a", "F41", "C1", "B5"]:
+                     # "B1", "B3", "B7", "E1", "E5", "E3", "E7", "A1AB", "A1CD", "A7A", "A7B", "A13", "A14", "A15",
+                     # "A23", "A25", "A29", "A31", "A51", "B15A", "B17", "F43"]:
             new_classes.append("red")
-        #elif result in ["B1", "B3", "B7", "E1", "E5", "E3", "E7", "A1AB", "A1CD", "A7A", "A7B", "A13", "A14", "A15",
-        #                "A23", "A25", "A29", "A31", "A51", "B15A", "B17", "F43"]:
-        #    new_classes.append("semi-red")
-        #elif result in ["D1a", "D1b", "D1e", "D5", "D7", "D9", "D10", "F12a", "F12b", "B21", "E9a", "E9a_miva", "E9b",
-        #                "E9cd", "E9e", "F45", "F47", "F59", "X", "F19", "F49", "F50", "F87", "F13", "F21", "F23A",
-        #                "F25", "F27", "F29", "Handic"]:
-        #    new_classes.append("blue")
+        elif result in ["B1", "B3", "B7", "E1", "E5", "E3", "E7", "A1AB", "A1CD", "A7A", "A7B", "A13", "A14", "A15",
+                        "A23", "A25", "A29", "A31", "A51", "B15A", "B17", "F43"]:
+            new_classes.append("semi-red")
+        elif result in ["D1a", "D1b", "D1e", "D5", "D7", "D9", "D10", "F12a", "F12b", "B21", "E9a", "E9a_miva", "E9b",
+                        "E9cd", "E9e", "F45", "F47", "F59", "X", "F19", "F49", "F50", "F87", "F13", "F21", "F23A",
+                        "F25", "F27", "F29", "Handic"]:
+            new_classes.append("blue")
         #elif result in ["C37", "F1", "F1a_h", "F33_34", "F3a_h", "F4b", "begin", "end", "e0c", "lang", "m"]:
         #    new_classes.append("white")
         else:
@@ -107,9 +107,14 @@ def classify_traffic_signs(k):
 
             print("Training ", image, "...")
 
+            #hue = color_extractor.extract_hue(image)
+            #feature_vector = color_extractor.calculate_histogram(hue, 20)
+
+            feature_vector = color_extractor.extract_zernike(image)
+            print(feature_vector)
 
             #feature_vector = symbol_extractor.calculateDCT(image)
-            feature_vector = color_extractor.extract_hog(image)
+            feature_vector = append(feature_vector, color_extractor.extract_hog(image))
             # #print(len(feature_vector))
             #
             # # First we extract the color features
@@ -131,16 +136,19 @@ def classify_traffic_signs(k):
         # We are using seed 1337 to always get the same results (can be put on None for testing)
         clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
                   random_state=1337, shrinking=False, tol=0.001, verbose=False)
-        clf.fit(feature_vectors, train_set_results)
+        clf.fit(feature_vectors, transform_classes(train_set_results))
 
         prediction_object = Prediction()
         for im in validation_set:
             print("Predicting ", im, "...")
 
-
+            #hue = color_extractor.extract_hue(im)
+            #validation_feature_vector = color_extractor.calculate_histogram(hue, 20)
             #validation_feature_vector = symbol_extractor.calculateDCT(im)
 
-            validation_feature_vector = color_extractor.extract_hog(im)
+            validation_feature_vector = color_extractor.extract_zernike(im)
+
+            validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
             #
             # # Extract the same color features as the training phase
             #hue = color_extractor.extract_hue(im)
@@ -163,8 +171,8 @@ def classify_traffic_signs(k):
 
 
         # Evaluate and add to logloss
-        print(prediction_object.evaluate(validation_set_results))
-        avg_logloss += prediction_object.evaluate(validation_set_results)
+        print(prediction_object.evaluate(transform_classes(validation_set_results)))
+        avg_logloss += prediction_object.evaluate(transform_classes(validation_set_results))
 
     print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss/k)
 

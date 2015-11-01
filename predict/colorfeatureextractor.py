@@ -1,12 +1,7 @@
 import colorsys
-import operator
-import math
-import cv2
-import mahotas
-import numpy
 from skimage.feature import hog
-from skimage import color, exposure
-from numpy import histogram, asarray, pad
+from skimage import color
+from numpy import histogram, asarray
 from skimage.io import imread, imsave
 from predict.predictor import Predictor
 from skimage.transform import resize
@@ -15,7 +10,8 @@ __author__ = 'Group 16'
 
 """
 
-    This class contains a predictor that uses colour information.
+    This class contains a predictor that uses colour information. It can extract a hue image from an image and
+    calculate a histogram of these values.
 
     Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
     Commissioned by UGent, course Machine Learning
@@ -30,16 +26,9 @@ class ColorFeatureExtractor(Predictor):
                  cells_per_block=(1, 1), normalise=True)
         return fd.tolist()
 
-    def extract_zernike(self, element):
-        return mahotas.features.zernike_moments(resize(color.rgb2gray(imread(element)), (64, 64)), radius=64, degree=10)
-
     def calculate_histogram(self, hue, bins=20):
         hist = histogram(hue, bins=bins, range=(0, 1))
 
-        # DEBUG: Save our results
-        ##imsave(element[:-4]+'test.png', asarray(hue))
-
-        # Red 250, Yellow 35, Blue 150-160
         return [x / sum(hist[0]) for x in hist[0]]
 
     def extract_hue(self, element, binary=False, debug=False):

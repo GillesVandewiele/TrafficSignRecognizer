@@ -1,6 +1,7 @@
 import colorsys
 import operator
 import math
+import mahotas
 import numpy
 from skimage.feature import hog
 from skimage import color, exposure
@@ -26,6 +27,9 @@ class ColorFeatureExtractor(Predictor):
         fd = hog(image, orientations=9, pixels_per_cell=(8, 8),
                  cells_per_block=(1, 1), normalise=True)
         return fd.tolist()
+
+    def extract_zernike(self, element):
+        return mahotas.features.zernike_moments(resize(color.rgb2gray(imread(element)), (64, 64)), radius=64, degree=10)
 
     def calculate_histogram(self, hue, bins=20):
         hist = histogram(hue, bins=bins, range=(0, 1))

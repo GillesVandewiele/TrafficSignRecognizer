@@ -36,8 +36,8 @@ class SymbolPredictor(Predictor):
 
     def calculateDCT(self, element):
         clusters = 3
-        image_size = 64
-        block_size = 8
+        image_size = 128
+        block_size = 16
 
         # Read image in grayscale and convert to workable shape
         img = imread(element, True)

@@ -3,6 +3,7 @@ import os
 from numpy import asarray, pad, resize, append
 from skimage.io import imread
 from sklearn.cross_validation import KFold
+from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from inout.fileparser import FileParser
 from predict.colorfeatureextractor import ColorFeatureExtractor
@@ -79,10 +80,10 @@ def classify_traffic_signs(k):
 
     # Decide on indices of training and validation data using k-fold cross validation
     """len(train_images)"""
-    kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
-    # kf = KFold(500, n_folds=k, shuffle=True, random_state=1337)
-    # train_images=train_images[660:1160]
-    # results=results[660:1160]
+    #kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
+    kf = KFold(300, n_folds=k, shuffle=True, random_state=1337)
+    train_images=train_images[500:800]
+    results=results[500:800]
 
     # Predict
     avg_logloss = 0
@@ -104,57 +105,72 @@ def classify_traffic_signs(k):
 
             print("Training ", image, "...")
 
-            feature_vector = color_extractor.extract_hog(image)
+            feature_vector = color_extractor.extract_zernike(image)
+            print(type(feature_vector))
+
+            #feature_vector = symbol_extractor.calculateDCT(image)
+            #feature_vector = color_extractor.extract_hog(image)
+            feature_vector = append(feature_vector, color_extractor.extract_hog(image))
             # print(len(feature_vector))
             #
             # First we extract the color features
 
-            #hue = color_extractor.extract_hue(image)
-            #feature_vector = color_extractor.calculate_histogram(hue, 10)
+            hue = color_extractor.extract_hue(image)
+            feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
 
             # Then we add the shape_features
-            #shape_features = shape_extractor.predictShape(hue)
-            #feature_vector = append(feature_vector, shape_features)
+            shape_features = shape_extractor.predictShape(hue)
+            feature_vector = append(feature_vector, shape_features)
             #feature_vector = shape_features
 
-            #TODO: extract symbol/icon features
+            # TODO: extract symbol/icon features
             feature_vector = append(feature_vector,symbol_extractor.calculateDCT(image))
 
 
             feature_vectors.append(feature_vector)
+            print(type(feature_vector))
 
         # We use C-SVM with a linear kernel and want to predict probabilities
         # max_iter = -1 for no limit on iterations (tol is our stopping criterion)
         # Put verbose off for some output and don't use the shrinking heuristic (needs some testing)
         # Allocate 1 GB of memory for our kernel
         # We are using seed 1337 to always get the same results (can be put on None for testing)
-        clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
+        """
+        clf = SVC(C=0.25, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
                   random_state=1337, shrinking=False, tol=0.0001, verbose=False)
+        """
+        clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=1.0, intercept_scaling=1,
+                                 class_weight=None, random_state=None, solver='liblinear', max_iter=100,
+                                 multi_class='ovr', verbose=0)
         clf.fit(feature_vectors, train_set_results)
 
         prediction_object = Prediction()
         for im in validation_set:
             print("Predicting ", im, "...")
 
-            validation_feature_vector = color_extractor.extract_hog(im)
+            validation_feature_vector = color_extractor.extract_zernike(im)
+
+            validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
+
+            #validation_feature_vector = color_extractor.extract_hog(im)
 
             # Extract the same color features as the training phase
-            #hue = color_extractor.extract_hue(im)
-            #validation_feature_vector = color_extractor.calculate_histogram(hue, 10)
+            hue = color_extractor.extract_hue(im)
+            validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
 
             # And the same shape features
-            #shape_features = shape_extractor.predictShape(hue)
-            #validation_feature_vector = append(validation_feature_vector, shape_features)
+            shape_features = shape_extractor.predictShape(hue)
+            validation_feature_vector = append(validation_feature_vector, shape_features)
             #validation_feature_vector = shape_features
             validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
-            #print(clf.predict_proba(validation_feature_vector)[0])
+            print(clf.predict(validation_feature_vector)[0])
 
-            prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
+            prediction_object.addPrediction(clf.predict(validation_feature_vector)[0])
 
 
         # Evaluate and add to logloss
-        print(prediction_object.evaluate(validation_set_results))
-        avg_logloss += prediction_object.evaluate(validation_set_results)
+        print(prediction_object.evaluate_binary(validation_set_results))
+        avg_logloss += prediction_object.evaluate_binary(validation_set_results)
 
     print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss/k)
 

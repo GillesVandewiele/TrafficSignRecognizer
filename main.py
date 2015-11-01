@@ -1,4 +1,5 @@
 import os
+import math
 import numpy
 import skimage
 from sklearn.cross_validation import KFold
@@ -113,7 +114,7 @@ FileParser.write_CSV("color_chances.xlsx", prediction_object)
 prediction_object.adapt_probabilities()
 FileParser.write_CSV("color_nochances.xlsx", prediction_object)
 """
-
+"""
 import numpy as np
 X = np.array([[-1, -1, 1], [-2, -1, 1], [1, 1, -1], [2, 1, -1]])
 y = np.array(["B5", "B5", "A1", "A1"])
@@ -129,3 +130,13 @@ clf.fit(X, y)
 print(clf.predict_proba([[-0.8, -1, 1]]))
 pred = ColorFeatureExtractor()
 pred.extract_hue(os.path.join(os.path.dirname(__file__), "01856_06592.png"))
+"""
+
+x = 2250
+percent = 0.95
+fault = 0.0005
+p1 = math.log(max(min(fault, 1-pow(10, -15)), pow(10, -15)))
+p2 = math.log(max(min(1-(80*fault), 1-pow(10, -15)), pow(10, -15)))
+print(p1)
+print(p2)
+print(p1*(1-percent) + p2*(percent))

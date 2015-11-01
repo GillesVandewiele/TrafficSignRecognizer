@@ -167,6 +167,22 @@ class Prediction(object):
 
         return logloss
 
+    def evaluate_binary(self, results):
+        """
+            Evaluate the logloss score
+            :param results: array with the same length as :var predictions with the corresponding result as a string
+            :return: the logloss score
+        """
+        correct = 0
+        counter = 0
+        for prediction in self.predictions:
+            if prediction == results[counter]:
+                correct += 1
+            counter += 1
+
+
+        return correct/counter
+
 
 class PredictionException(Exception):
     def __init__(self, value, prediction):

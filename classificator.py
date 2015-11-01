@@ -118,7 +118,7 @@ def classify_traffic_signs(k):
             #feature_vector = shape_features
 
             #TODO: extract symbol/icon features
-            #feature_vector = symbol_extractor.calculateDCT(image)
+            feature_vector = append(feature_vector,symbol_extractor.calculateDCT(image))
 
 
             feature_vectors.append(feature_vector)
@@ -146,7 +146,7 @@ def classify_traffic_signs(k):
             #shape_features = shape_extractor.predictShape(hue)
             #validation_feature_vector = append(validation_feature_vector, shape_features)
             #validation_feature_vector = shape_features
-
+            validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
             #print(clf.predict_proba(validation_feature_vector)[0])
 
             prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])

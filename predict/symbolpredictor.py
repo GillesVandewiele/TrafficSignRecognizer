@@ -36,6 +36,8 @@ class SymbolPredictor(Predictor):
 
     def calculateDCT(self, element):
         clusters = 3
+        image_size = 64
+        block_size = 8
 
         # Read image in grayscale and convert to workable shape
         img = imread(element, True)
@@ -57,37 +59,11 @@ class SymbolPredictor(Predictor):
         newImg.shape = img.shape
 
         # Resize image for DCT
-        newImg = imresize(newImg, (128, 128)).astype(float)
+        newImg = imresize(newImg, (image_size, image_size)).astype(float)
 
-        # DCT of image
-        dct = fftpack.dct(fftpack.dct(newImg.T, norm='ortho').T, norm='ortho')
+        coefficients = []
+        for i in range(int(image_size/block_size)):
+            dct = fftpack.dct(fftpack.dct(newImg[i*block_size:(i+1)*block_size-1, i*block_size:(i+1)*block_size-1].T, norm='ortho').T, norm='ortho')
+            coefficients.extend([dct[0, 0], dct[0, 1], dct[1, 0], dct[2, 0], dct[1, 1], dct[0, 2], dct[0, 3], dct[1, 2], dct[2, 1], dct[3, 0], dct[4, 0], dct[3, 1], dct[2, 2], dct[1, 3], dct[0, 4]])
 
-        # Return 15 most dominant coefficients
-        return [dct[0, 0], dct[0, 1], dct[1, 0], dct[2, 0], dct[1, 1], dct[0, 2], dct[0, 3], dct[1, 2], dct[2, 1], dct[3, 0], dct[4, 0], dct[3, 1], dct[2, 2], dct[1, 3], dct[0, 4]]
-
-"""
-    def predict(self, image):
-
-        print("Predicting ", image, "...")
-
-        dct = self.calculateDCT(image)
-
-        # Now calculate the MSE to all other element
-        mse_values = []
-        for i in range(len(self.dcts)):
-            mse_values[i] = sum([(dct[x]-self.dcts[i, 0, x]) ** 2 for x in range(len(dct))])
-
-        sortedNeighbours = sorted(self.dcts[:][1], key=mse_values)
-
-        k_neighbours = 5
-
-        probabilities = {}
-        for i in range(k_neighbours):
-            if sortedNeighbours[i] in probabilities:
-                probabilities[sortedNeighbours[i]] += 1 / k_neighbours
-            else:
-                probabilities[sortedNeighbours[i]] = 1 / k_neighbours
-
-        print(sorted(probabilities.items(), key=operator.itemgetter(1), reverse=True))
-        return probabilities
-"""
+        return coefficients

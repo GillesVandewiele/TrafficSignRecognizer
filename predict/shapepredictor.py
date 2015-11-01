@@ -6,7 +6,6 @@ from pylab import *
 import matplotlib.pyplot as plt
 from skimage.morphology import convex_hull_image
 from predict.predictor import Predictor
-from predict.zernikemoments import ZernikeMoments
 
 __author__ = 'Group16'
 

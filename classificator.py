@@ -14,8 +14,6 @@ from skimage import color, exposure
 import matplotlib.pyplot as plt
 # from predict.shapepredictor import ShapePredictor
 from predict.symbolpredictor import SymbolPredictor
-from predict.zernikemoments import ZernikeMoments
-
 __author__ = 'Group16'
 
 """
@@ -174,9 +172,9 @@ def classify_traffic_signs(k):
     print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss / k)
 
 
-classify_traffic_signs(2)
+#classify_traffic_signs(2)
 
-"""
+
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
 test_images_dir = os.path.join(os.path.dirname(__file__), "test")
 
@@ -194,22 +192,17 @@ for image in train_images:
     print("Train: ", image)
     feature_vector = color_extractor.extract_zernike(image)
 
-    # feature_vector = symbol_extractor.calculateDCT(image)
-    # feature_vector = color_extractor.extract_hog(image)
+    #feature_vector = color_extractor.extract_hog(image)
     feature_vector = append(feature_vector, color_extractor.extract_hog(image))
-    # print(len(feature_vector))
-    #
-    # First we extract the color features
 
+    # First we extract the color features
     hue = color_extractor.extract_hue(image)
     feature_vector = append(feature_vector, color_extractor.calculate_histogram(hue, 20))
 
     # Then we add the shape_features
     contour = shape_extractor.calculateRimContour(hue)
     feature_vector = append(feature_vector, shape_extractor.calculateGeometricMoments(contour))
-    # feature_vector = shape_features
 
-    # TODO: extract symbol/icon features
     feature_vector = append(feature_vector, symbol_extractor.calculateDCT(image))
 
     feature_vectors.append(feature_vector)
@@ -225,9 +218,8 @@ for im in test_images:
     print("Predict: ", im)
     validation_feature_vector = color_extractor.extract_zernike(im)
 
+    #validation_feature_vector = color_extractor.extract_hog(im)
     validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
-
-    # validation_feature_vector = color_extractor.extract_hog(im)
 
     # Extract the same color features as the training phase
     hue = color_extractor.extract_hue(im)
@@ -235,17 +227,16 @@ for im in test_images:
 
     # And the same shape features
     contour = shape_extractor.calculateRimContour(hue)
-    validation_feature_vector = append(validation_feature_vector,
-                                       shape_extractor.calculateGeometricMoments(contour))
-    # validation_feature_vector = shape_features
+    validation_feature_vector = append(validation_feature_vector,shape_extractor.calculateGeometricMoments(contour))
+
     validation_feature_vector = append(validation_feature_vector, symbol_extractor.calculateDCT(im))
     # print(clf.predict(validation_feature_vector)[0])
 
-    prediction_object.addPrediction(clf.predict(validation_feature_vector)[0])
+    prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 
 FileParser.write_CSV("submission.xlsx", prediction_object)
-"""
+
 """
 image = color.rgb2gray(imread(os.path.join(os.path.dirname(__file__), "00129_02203.png")))
 <<<<<<< HEAD

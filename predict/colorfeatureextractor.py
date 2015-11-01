@@ -1,44 +1,35 @@
 import colorsys
-import operator
-import math
-import mahotas
-import numpy
 from skimage.feature import hog
-from skimage import color, exposure
-from numpy import histogram, asarray, pad
+from skimage import color
+from numpy import histogram, asarray
 from skimage.io import imread, imsave
 from predict.predictor import Predictor
 from skimage.transform import resize
+
 __author__ = 'Group 16'
 
 """
 
-    This class contains a predictor that uses colour information.
+    This class contains a predictor that uses colour information. It can extract a hue image from an image and
+    calculate a histogram of these values.
 
     Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
     Commissioned by UGent, course Machine Learning
 
 """
 
-class ColorFeatureExtractor(Predictor):
 
+class ColorFeatureExtractor(Predictor):
     def extract_hog(self, element):
         image = resize(color.rgb2gray(imread(element)), (64, 64))
         fd = hog(image, orientations=9, pixels_per_cell=(8, 8),
                  cells_per_block=(1, 1), normalise=True)
         return fd.tolist()
 
-    def extract_zernike(self, element):
-        return mahotas.features.zernike_moments(resize(color.rgb2gray(imread(element)), (64, 64)), radius=64, degree=10)
-
     def calculate_histogram(self, hue, bins=20):
         hist = histogram(hue, bins=bins, range=(0, 1))
 
-        # DEBUG: Save our results
-        ##imsave(element[:-4]+'test.png', asarray(hue))
-
-        # Red 250, Yellow 35, Blue 150-160
-        return [x/sum(hist[0]) for x in hist[0]]
+        return [x / sum(hist[0]) for x in hist[0]]
 
     def extract_hue(self, element, binary=False, debug=False):
 
@@ -46,21 +37,21 @@ class ColorFeatureExtractor(Predictor):
         img = imread(element)
 
         # Converting the RGB values to HSV values
-        hsv = [None]*len(img)
+        hsv = [None] * len(img)
         for i in range(len(img)):
-            temp = [None]*len(img[0])
+            temp = [None] * len(img[0])
             for j in range(len(img[0])):
-                temp[j] = colorsys.rgb_to_hsv(img[i, j, 0], img[i, j ,1], img[i, j, 2])
+                temp[j] = colorsys.rgb_to_hsv(img[i, j, 0], img[i, j, 1], img[i, j, 2])
             hsv[i] = temp
 
         # Extracting the 3 channels
-        hue = [None]*len(img)
-        saturation = [None]*len(img)
-        value = [None]*len(img)
+        hue = [None] * len(img)
+        saturation = [None] * len(img)
+        value = [None] * len(img)
         for x in range(len(img)):
-            hue_temp = [None]*len(img[0])
-            saturation_temp = [None]*len(img[0])
-            value_temp = [None]*len(img[0])
+            hue_temp = [None] * len(img[0])
+            saturation_temp = [None] * len(img[0])
+            value_temp = [None] * len(img[0])
             for y in range(len(img[0])):
                 hue_temp[y] = hsv[x][y][0]
                 saturation_temp[y] = hsv[x][y][1]
@@ -70,11 +61,11 @@ class ColorFeatureExtractor(Predictor):
             value[x] = value_temp
 
         # Normalize the Value values
-        value_norm = [None]*len(value)
+        value_norm = [None] * len(value)
         for x in range(len(value)):
-            value_norm_temp = [None]*len(value[x])
+            value_norm_temp = [None] * len(value[x])
             for y in range(len(value[x])):
-                value_norm_temp[y] = value[x][y]/255
+                value_norm_temp[y] = value[x][y] / 255
             value_norm[x] = value_norm_temp
         value = value_norm
 
@@ -83,10 +74,10 @@ class ColorFeatureExtractor(Predictor):
         # else we set the pixel to black
         for x in range(len(hue)):
             for y in range(len(hue[x])):
-                if (hue[x][y]>0.95 and hue[x][y]<=1) or (hue[x][y]>=0 and hue[x][y]<0.05):
+                if (hue[x][y] > 0.95 and hue[x][y] <= 1) or (hue[x][y] >= 0 and hue[x][y] < 0.05):
                     hue[x][y] = 1
                 elif binary:
-                    hue[x][y]=0
+                    hue[x][y] = 0
 
                 if saturation[x][y] < 0.25:  # Achromatic area
                     hue[x][y] = 0
@@ -94,6 +85,6 @@ class ColorFeatureExtractor(Predictor):
                     hue[x][y] = 0
 
         if debug:
-            imsave(element[:-4]+'test.png', asarray(hue))
+            imsave(element[:-4] + 'test.png', asarray(hue))
 
         return hue

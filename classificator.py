@@ -12,8 +12,9 @@ from predict.shapepredictor import ShapePredictor
 from skimage.feature import hog
 from skimage import color, exposure
 import matplotlib.pyplot as plt
-#from predict.shapepredictor import ShapePredictor
+# from predict.shapepredictor import ShapePredictor
 from predict.symbolpredictor import SymbolPredictor
+from predict.zernikemoments import ZernikeMoments
 
 __author__ = 'Group16'
 
@@ -23,15 +24,18 @@ __author__ = 'Group16'
     Commissioned by UGent, course Machine Learning
 """
 
-def get_results(train_images_dir):
-        # Check all files in the directory, the parent directory of a photo is the label
-        results = []
-        for shapesDirectory in os.listdir(train_images_dir):
-            os.listdir(os.path.join(train_images_dir, shapesDirectory))
-            for signDirectory in os.listdir(os.path.join(train_images_dir, shapesDirectory)):
-                results.extend([signDirectory]*len(os.listdir(os.path.join(train_images_dir, shapesDirectory, signDirectory))))
 
-        return results
+def get_results(train_images_dir):
+    # Check all files in the directory, the parent directory of a photo is the label
+    results = []
+    for shapesDirectory in os.listdir(train_images_dir):
+        os.listdir(os.path.join(train_images_dir, shapesDirectory))
+        for signDirectory in os.listdir(os.path.join(train_images_dir, shapesDirectory)):
+            results.extend(
+                [signDirectory] * len(os.listdir(os.path.join(train_images_dir, shapesDirectory, signDirectory))))
+
+    return results
+
 
 def get_images_from_directory(directory):
     # Get all files from a directory
@@ -41,6 +45,7 @@ def get_images_from_directory(directory):
             images.append(os.path.join(root, file))
 
     return images
+
 
 def transform_classes(results):
     # Reduce the number of classes in the results for color classification, the resulting classes are:
@@ -55,18 +60,19 @@ def transform_classes(results):
                       "B1", "B3", "B7", "E1", "E5", "E3", "E7", "A1AB", "A1CD", "A7A", "A7B", "A13", "A14", "A15",
                       "A23", "A25", "A29", "A31", "A51", "B15A", "B17", "F43"]:
             new_classes.append("red")
-        #elif result in ["B1", "B3", "B7", "E1", "E5", "E3", "E7", "A1AB", "A1CD", "A7A", "A7B", "A13", "A14", "A15",
+        # elif result in ["B1", "B3", "B7", "E1", "E5", "E3", "E7", "A1AB", "A1CD", "A7A", "A7B", "A13", "A14", "A15",
         #                "A23", "A25", "A29", "A31", "A51", "B15A", "B17", "F43"]:
         #    new_classes.append("semi-red")
-        #elif result in ["D1a", "D1b", "D1e", "D5", "D7", "D9", "D10", "F12a", "F12b", "B21", "E9a", "E9a_miva", "E9b",
+        # elif result in ["D1a", "D1b", "D1e", "D5", "D7", "D9", "D10", "F12a", "F12b", "B21", "E9a", "E9a_miva", "E9b",
         #                "E9cd", "E9e", "F45", "F47", "F59", "X", "F19", "F49", "F50", "F87", "F13", "F21", "F23A",
         #                "F25", "F27", "F29", "Handic"]:
         #    new_classes.append("blue")
-        #elif result in ["C37", "F1", "F1a_h", "F33_34", "F3a_h", "F4b", "begin", "end", "e0c", "lang", "m"]:
+        # elif result in ["C37", "F1", "F1a_h", "F33_34", "F3a_h", "F4b", "begin", "end", "e0c", "lang", "m"]:
         #    new_classes.append("white")
         else:
             new_classes.append("others")
     return new_classes
+
 
 def classify_traffic_signs(k):
     # Get the images and results from the directories train and test
@@ -80,10 +86,10 @@ def classify_traffic_signs(k):
 
     # Decide on indices of training and validation data using k-fold cross validation
     """len(train_images)"""
-    #kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
-    kf = KFold(300, n_folds=k, shuffle=True, random_state=1337)
-    train_images=train_images[500:800]
-    results=results[500:800]
+    kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
+    # kf = KFold(300, n_folds=k, shuffle=True, random_state=1337)
+    # train_images=train_images[500:800]
+    # results=results[500:800]
 
     # Predict
     avg_logloss = 0
@@ -99,36 +105,29 @@ def classify_traffic_signs(k):
         color_extractor = ColorFeatureExtractor()
         shape_extractor = ShapePredictor()
         symbol_extractor = SymbolPredictor()
-        #print(transform_classes(train_set_results))
+        # print(transform_classes(train_set_results))
 
         for image in train_set:
-
             print("Training ", image, "...")
 
             feature_vector = color_extractor.extract_zernike(image)
-            print(type(feature_vector))
 
-            #feature_vector = symbol_extractor.calculateDCT(image)
-            #feature_vector = color_extractor.extract_hog(image)
             feature_vector = append(feature_vector, color_extractor.extract_hog(image))
-            # print(len(feature_vector))
-            #
+
             # First we extract the color features
 
             hue = color_extractor.extract_hue(image)
-            feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
+            feature_vector = append(feature_vector, color_extractor.calculate_histogram(hue, 20))
 
             # Then we add the shape_features
-            shape_features = shape_extractor.predictShape(hue)
-            feature_vector = append(feature_vector, shape_features)
-            #feature_vector = shape_features
+            contour = shape_extractor.calculateRimContour(hue)
+            feature_vector = append(feature_vector, shape_extractor.calculateGeometricMoments(contour))
+
 
             # TODO: extract symbol/icon features
-            feature_vector = append(feature_vector,symbol_extractor.calculateDCT(image))
-
+            feature_vector = append(feature_vector, symbol_extractor.calculateDCT(image))
 
             feature_vectors.append(feature_vector)
-            print(type(feature_vector))
 
         # We use C-SVM with a linear kernel and want to predict probabilities
         # max_iter = -1 for no limit on iterations (tol is our stopping criterion)
@@ -152,27 +151,28 @@ def classify_traffic_signs(k):
 
             validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
 
-            #validation_feature_vector = color_extractor.extract_hog(im)
+            # validation_feature_vector = color_extractor.extract_hog(im)
 
             # Extract the same color features as the training phase
             hue = color_extractor.extract_hue(im)
-            validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+            validation_feature_vector = append(validation_feature_vector, color_extractor.calculate_histogram(hue, 20))
 
             # And the same shape features
-            shape_features = shape_extractor.predictShape(hue)
-            validation_feature_vector = append(validation_feature_vector, shape_features)
-            #validation_feature_vector = shape_features
-            validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
-            print(clf.predict(validation_feature_vector)[0])
+            contour = shape_extractor.calculateRimContour(hue)
+            validation_feature_vector = append(validation_feature_vector,shape_extractor.calculateGeometricMoments(contour))
 
-            prediction_object.addPrediction(clf.predict(validation_feature_vector)[0])
+            validation_feature_vector = append(validation_feature_vector, symbol_extractor.calculateDCT(im))
+            # print(clf.predict(validation_feature_vector)[0])
+
+            prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 
         # Evaluate and add to logloss
-        print(prediction_object.evaluate_binary(validation_set_results))
-        avg_logloss += prediction_object.evaluate_binary(validation_set_results)
+        print(prediction_object.evaluate(validation_set_results))
+        avg_logloss += prediction_object.evaluate(validation_set_results)
 
-    print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss/k)
+    print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss / k)
+
 
 classify_traffic_signs(2)
 
@@ -188,45 +188,64 @@ results = get_results(train_images_dir)
 feature_vectors = []
 color_extractor = ColorFeatureExtractor()
 shape_extractor = ShapePredictor()
+symbol_extractor = SymbolPredictor()
 
 for image in train_images:
     print("Train: ", image)
-    feature_vector = color_extractor.extract_hog(image)
-    #print(len(feature_vector))
+    feature_vector = color_extractor.extract_zernike(image)
 
+    # feature_vector = symbol_extractor.calculateDCT(image)
+    # feature_vector = color_extractor.extract_hog(image)
+    feature_vector = append(feature_vector, color_extractor.extract_hog(image))
+    # print(len(feature_vector))
+    #
     # First we extract the color features
-    #hue = color_extractor.extract_hue(image)
-    #feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
+
+    hue = color_extractor.extract_hue(image)
+    feature_vector = append(feature_vector, color_extractor.calculate_histogram(hue, 20))
 
     # Then we add the shape_features
-    #shape_features = shape_extractor.predictShape(hue)
-    #feature_vector = append(feature_vector, shape_features)
+    contour = shape_extractor.calculateRimContour(hue)
+    feature_vector = append(feature_vector, shape_extractor.calculateGeometricMoments(contour))
+    # feature_vector = shape_features
 
-    #TODO: extract symbol/icon features
+    # TODO: extract symbol/icon features
+    feature_vector = append(feature_vector, symbol_extractor.calculateDCT(image))
 
     feature_vectors.append(feature_vector)
 
-clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
-                  random_state=None, shrinking=False, tol=0.001, verbose=False)
+clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=1.0, intercept_scaling=1,
+                                 class_weight=None, random_state=None, solver='liblinear', max_iter=100,
+                                 multi_class='ovr', verbose=0)
 clf.fit(feature_vectors, results)
 
 # Testing phase
 prediction_object = Prediction()
 for im in test_images:
     print("Predict: ", im)
-    validation_feature_vector = color_extractor.extract_hog(im)
+    validation_feature_vector = color_extractor.extract_zernike(im)
+
+    validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
+
+    # validation_feature_vector = color_extractor.extract_hog(im)
+
     # Extract the same color features as the training phase
-    #hue = color_extractor.extract_hue(im)
-    #validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+    hue = color_extractor.extract_hue(im)
+    validation_feature_vector = append(validation_feature_vector, color_extractor.calculate_histogram(hue, 20))
+
     # And the same shape features
-    #shape_features = shape_extractor.predictShape(hue)
-    #validation_feature_vector = append(validation_feature_vector, shape_features)
-    prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
+    contour = shape_extractor.calculateRimContour(hue)
+    validation_feature_vector = append(validation_feature_vector,
+                                       shape_extractor.calculateGeometricMoments(contour))
+    # validation_feature_vector = shape_features
+    validation_feature_vector = append(validation_feature_vector, symbol_extractor.calculateDCT(im))
+    # print(clf.predict(validation_feature_vector)[0])
+
+    prediction_object.addPrediction(clf.predict(validation_feature_vector)[0])
+
 
 FileParser.write_CSV("submission.xlsx", prediction_object)
 """
-
-
 """
 image = color.rgb2gray(imread(os.path.join(os.path.dirname(__file__), "00129_02203.png")))
 <<<<<<< HEAD

@@ -22,7 +22,7 @@ __author__ = 'Group16'
 
 class ShapePredictor():
     @staticmethod
-    def predictShape(hue):
+    def calculateRimContour(hue):
         img = (np.rint(asarray(hue) * 255)).astype(np.uint8)
         img = resize(img, (64, 64))
         ret, thresh = cv2.threshold(img, 127, 255, 0)
@@ -40,7 +40,7 @@ class ShapePredictor():
 
     @staticmethod
     def calculateGeometricMoments(contour):
-        if contour == None:
+        if contour is None:
             return [0, 0, 0, 0]
 
         mu = cv2.moments(contour, False)

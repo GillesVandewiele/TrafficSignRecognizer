@@ -69,16 +69,16 @@ def transform_classes(results):
     return new_classes
 """
 
-def get_training_set(nr_samples, training_set, results, seed, k):
+def get_training_set(nr_samples, training_set, results, seed):
     nr_classes = len(Prediction.TRAFFIC_SIGNS)
 
-    if(nr_samples < k*nr_classes):
+    if(nr_samples < 2*nr_classes):
         # Fuck exceptions
-        print("Number of samples should be greater than k*nr_classes")
+        print("Number of samples should be greater than 2*nr_classes")
         return
 
-    if(nr_samples%k != 0):
-        print("Number of samples should be divisible by k!")
+    if(nr_samples%2 != 0):
+        print("Number of samples should be divisible by 2!")
         return
 
     random.seed(seed)
@@ -89,15 +89,17 @@ def get_training_set(nr_samples, training_set, results, seed, k):
 
     # Divide the training set in his classes
     training_set_per_class = {}
+    results_set_per_class = {}
     results_set = sorted(set(results))
     for i in range(nr_classes):
         training_set_per_class[results_set[i]] = []
+        results_set_per_class[results_set[i]] = []
 
     for i in range(len(training_set)):
         training_set_per_class[results[i]].append(training_set[i])
+        results_set_per_class[results[i]].append(results[i])
 
     # First add a sample of each class to the new training set
-    sign_counter = 0
     new_train_set = []
     new_validation_set = []
     new_train_results = []
@@ -107,20 +109,24 @@ def get_training_set(nr_samples, training_set, results, seed, k):
         index = random.randint(0, len(training_set_per_class[results_set[i]])-1)
         new_train_set.append(training_set_per_class[results_set[i]][index])
         training_set_per_class[results_set[i]].pop(index)
+        results_set_per_class[results_set[i]].pop(index)
         new_train_results.append(results_set[i])
 
         # And in the validation set
         index = random.randint(0, len(training_set_per_class[results_set[i]])-1)
         new_validation_set.append(training_set_per_class[results_set[i]][index])
         training_set_per_class[results_set[i]].pop(index)
+        results_set_per_class[results_set[i]].pop(index)
         new_validation_results.append(results_set[i])
 
-    # Now we got an equal validation and train set, so we need to add k*nr_classes using the distribution from
-    # benchmark predictor
+    remaining_samples = nr_samples-2*nr_classes
+
+    # Now use the previous calculated distributions to assign the required amount of remaining samples to the dataset
     values = arange(nr_classes)
     probs = sorted(benchmark.occurrenceProbabilities.values())
     custm = rv_discrete(values=(values, probs))
-    for i in range((k-2)*nr_classes):
+    results_set = sorted(set(results))
+    for j in range(int(remaining_samples/2)):
         sign = custm.rvs(size=1)
         while(len(training_set_per_class[results_set[sign]]) == 0):
             values = delete(values, where(values==sign))
@@ -132,29 +138,14 @@ def get_training_set(nr_samples, training_set, results, seed, k):
         index = random.randint(0, len(training_set_per_class[results_set[sign]])-1)
         new_train_set.append(training_set_per_class[results_set[sign]][index])
         training_set_per_class[results_set[sign]].pop(index)
+        results_set_per_class[results_set[i]].pop(index)
         new_train_results.append(results_set[sign])
 
-    # Now use the previous calculated distributions to assign the required amount of remaining samples to the dataset
     values = arange(nr_classes)
     probs = sorted(benchmark.occurrenceProbabilities.values())
     custm = rv_discrete(values=(values, probs))
-    for i in range(int((nr_samples - k*nr_classes)/k)):
-
-        # Add k-1 samples to the train set
-        for j in range(k-1):
-            sign = custm.rvs(size=1)
-            while(len(training_set_per_class[results_set[sign]]) == 0):
-                values = delete(values, where(values==sign))
-                probs = delete(probs, where(probs==sign))
-                custm = rv_discrete(values=(values, probs))
-                results_set.pop(sign)
-                sign = custm.rvs(size=1)
-
-            index = random.randint(0, len(training_set_per_class[results_set[sign]])-1)
-            new_train_set.append(training_set_per_class[results_set[sign]][index])
-            training_set_per_class[results_set[sign]].pop(index)
-            new_train_results.append(results_set[sign])
-
+    results_set = sorted(set(results))
+    for j in range(int(remaining_samples/2)):
         # And 1 sample to the validation set
         sign = custm.rvs(size=1)
         while(len(training_set_per_class[results_set[sign]]) == 0):
@@ -167,10 +158,8 @@ def get_training_set(nr_samples, training_set, results, seed, k):
         index = random.randint(0, len(training_set_per_class[results_set[sign]])-1)
         new_validation_set.append(training_set_per_class[results_set[sign]][index])
         training_set_per_class[results_set[sign]].pop(index)
+        results_set_per_class[results_set[i]].pop(index)
         new_validation_results.append(results_set[sign])
-
-
-        i += (k-1)
 
     return [new_train_set, new_validation_set, new_train_results, new_validation_results]
 
@@ -266,7 +255,7 @@ sizes = [256, 512, 1024, 2048]
 
 for size in sizes:
     print("Calculating the logloss for size: ", size)
-    new_train_set, new_validation_set, new_train_set_results, new_validation_set_results = get_training_set(size, train_images, results, 1337, 2)
+    new_train_set, new_validation_set, new_train_set_results, new_validation_set_results = get_training_set(size, train_images, results, 1337)
     score1 = classify_traffic_signs(new_train_set, new_validation_set, new_train_set_results, new_validation_set_results)
     score2 = classify_traffic_signs(new_validation_set, new_train_set, new_validation_set_results, new_train_set_results)
     print("Avg score using a dataset of size ", size, " = ", (score1+score2)/2)

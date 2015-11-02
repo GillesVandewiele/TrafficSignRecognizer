@@ -69,15 +69,19 @@ def transform_classes(results):
     return new_classes
 """
 
-def get_training_set(nr_samples, training_set, results, seed):
-    if(nr_samples < 81):
+def get_training_set(nr_samples, training_set, results, seed, k):
+    nr_classes = len(Prediction.TRAFFIC_SIGNS)
+
+    if(nr_samples < k*nr_classes):
         # Fuck exceptions
-        print("Number of samples should be greater than 81")
+        print("Number of samples should be greater than k*nr_classes")
+        return
+
+    if(nr_samples%k != 0):
+        print("Number of samples should be divisible by k!")
         return
 
     random.seed(seed)
-
-    nr_classes = len(Prediction.TRAFFIC_SIGNS)
 
     # Use the benchmark predictor to calculate the occurrence of each class
     benchmark = BenchmarkPredictor()
@@ -94,19 +98,29 @@ def get_training_set(nr_samples, training_set, results, seed):
 
     # First add a sample of each class to the new training set
     sign_counter = 0
-    new_training_set = []
-    new_results = []
+    new_train_set = []
+    new_validation_set = []
+    new_train_results = []
+    new_validation_results = []
     for i in range(nr_classes):
+        # Put an element in the new training set
         index = random.randint(0, len(training_set_per_class[results_set[i]])-1)
-        new_training_set.append(training_set_per_class[results_set[i]][index])
+        new_train_set.append(training_set_per_class[results_set[i]][index])
         training_set_per_class[results_set[i]].pop(index)
-        new_results.append(results_set[i])
+        new_train_results.append(results_set[i])
 
-    # Now use the previous calculated distributions to assign the required amount of remaining samples to the dataset
+        # And in the validation set
+        index = random.randint(0, len(training_set_per_class[results_set[i]])-1)
+        new_validation_set.append(training_set_per_class[results_set[i]][index])
+        training_set_per_class[results_set[i]].pop(index)
+        new_validation_results.append(results_set[i])
+
+    # Now we got an equal validation and train set, so we need to add k*nr_classes using the distribution from
+    # benchmark predictor
     values = arange(nr_classes)
     probs = sorted(benchmark.occurrenceProbabilities.values())
     custm = rv_discrete(values=(values, probs))
-    for i in range(nr_samples - nr_classes):
+    for i in range((k-2)*nr_classes):
         sign = custm.rvs(size=1)
         while(len(training_set_per_class[results_set[sign]]) == 0):
             values = delete(values, where(values==sign))
@@ -116,120 +130,164 @@ def get_training_set(nr_samples, training_set, results, seed):
             sign = custm.rvs(size=1)
 
         index = random.randint(0, len(training_set_per_class[results_set[sign]])-1)
-        new_training_set.append(training_set_per_class[results_set[sign]][index])
+        new_train_set.append(training_set_per_class[results_set[sign]][index])
         training_set_per_class[results_set[sign]].pop(index)
-        new_results.append(results_set[sign])
+        new_train_results.append(results_set[sign])
 
-    return [new_training_set, new_results]
+    # Now use the previous calculated distributions to assign the required amount of remaining samples to the dataset
+    values = arange(nr_classes)
+    probs = sorted(benchmark.occurrenceProbabilities.values())
+    custm = rv_discrete(values=(values, probs))
+    for i in range(int((nr_samples - k*nr_classes)/k)):
+
+        # Add k-1 samples to the train set
+        for j in range(k-1):
+            sign = custm.rvs(size=1)
+            while(len(training_set_per_class[results_set[sign]]) == 0):
+                values = delete(values, where(values==sign))
+                probs = delete(probs, where(probs==sign))
+                custm = rv_discrete(values=(values, probs))
+                results_set.pop(sign)
+                sign = custm.rvs(size=1)
+
+            index = random.randint(0, len(training_set_per_class[results_set[sign]])-1)
+            new_train_set.append(training_set_per_class[results_set[sign]][index])
+            training_set_per_class[results_set[sign]].pop(index)
+            new_train_results.append(results_set[sign])
+
+        # And 1 sample to the validation set
+        sign = custm.rvs(size=1)
+        while(len(training_set_per_class[results_set[sign]]) == 0):
+            values = delete(values, where(values==sign))
+            probs = delete(probs, where(probs==sign))
+            custm = rv_discrete(values=(values, probs))
+            results_set.pop(sign)
+            sign = custm.rvs(size=1)
+
+        index = random.randint(0, len(training_set_per_class[results_set[sign]])-1)
+        new_validation_set.append(training_set_per_class[results_set[sign]][index])
+        training_set_per_class[results_set[sign]].pop(index)
+        new_validation_results.append(results_set[sign])
+
+
+        i += (k-1)
+
+    return [new_train_set, new_validation_set, new_train_results, new_validation_results]
 
 
 
 
 
-def classify_traffic_signs(k,train_images,results):
+def classify_traffic_signs(train_set,validation_set,train_set_results, validation_set_results):
 
-    # Decide on indices of training and validation data using k-fold cross validation
-    kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
-
-    # Predict
     avg_logloss = 0
-    for train, validation in kf:
 
-        # Divide the train_images in a training and validation set (using KFold)
-        train_set = [train_images[i] for i in train]
-        validation_set = [train_images[i] for i in validation]
-        train_set_results = [results[i] for i in train]
-        validation_set_results = [results[i] for i in validation]
+    # Iterate over the training set and transform each input vector to a feature vector
+    feature_vectors = []
+    color_extractor = ColorFeatureExtractor()
+    shape_extractor = ShapeFeatureExtractor()
+    symbol_extractor = SymbolFeatureExtractor()
 
-        # Iterate over the training set and transform each input vector to a feature vector
-        feature_vectors = []
-        color_extractor = ColorFeatureExtractor()
-        shape_extractor = ShapeFeatureExtractor()
-        symbol_extractor = SymbolFeatureExtractor()
+    for image in train_set:
 
-        for image in train_set:
+        print("Training ", image, "...")
 
-            print("Training ", image, "...")
-
-            # First, calculate the Zernike moments
-            feature_vector = shape_extractor.extract_zernike(image)
+        # First, calculate the Zernike moments
+        feature_vector = shape_extractor.extract_zernike(image)
 
 
-            # Then the HOG, our most important feature(s)
-            #feature_vector = color_extractor.extract_hog(image)
-            feature_vector = append(feature_vector, color_extractor.extract_hog(image))
+        # Then the HOG, our most important feature(s)
+        #feature_vector = color_extractor.extract_hog(image)
+        feature_vector = append(feature_vector, color_extractor.extract_hog(image))
 
-            # Then we extract the color features
-            hue = color_extractor.extract_hue(image)
-            feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
+        # Then we extract the color features
+        hue = color_extractor.extract_hue(image)
+        feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
 
-            # Then we add the shape_features using the hue from the color edxtractor
-            contour = shape_extractor.calculateRimContour(hue)
-            shape_features = shape_extractor.calculateGeometricMoments(contour)
-            feature_vector = append(feature_vector, shape_features)
+        # Then we add the shape_features using the hue from the color edxtractor
+        contour = shape_extractor.calculateRimContour(hue)
+        shape_features = shape_extractor.calculateGeometricMoments(contour)
+        feature_vector = append(feature_vector, shape_features)
 
-            # Finally we append DCT coefficients
-            feature_vector = append(feature_vector,symbol_extractor.calculateDCT(image))
+        # Finally we append DCT coefficients
+        feature_vector = append(feature_vector,symbol_extractor.calculateDCT(image))
 
-            # Append our feature_vector to the feature_vectors
-            feature_vectors.append(feature_vector)
+        # Append our feature_vector to the feature_vectors
+        feature_vectors.append(feature_vector)
 
-        # We use C-SVM with a linear kernel and want to predict probabilities
-        # max_iter = -1 for no limit on iterations (tol is our stopping criterion)
-        # Put verbose off for some output and don't use the shrinking heuristic (needs some testing)
-        # Allocate 1 GB of memory for our kernel
-        # We are using seed 1337 to always get the same results (can be put on None for testing)
-        """
-        clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
-                  random_state=1337, shrinking=False, tol=0.0001, verbose=False)
+    # We use C-SVM with a linear kernel and want to predict probabilities
+    # max_iter = -1 for no limit on iterations (tol is our stopping criterion)
+    # Put verbose off for some output and don't use the shrinking heuristic (needs some testing)
+    # Allocate 1 GB of memory for our kernel
+    # We are using seed 1337 to always get the same results (can be put on None for testing)
+    """
+    clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
+              random_state=1337, shrinking=False, tol=0.0001, verbose=False)
 
-        """
-        # Use Logistic Regression instead of SVM
-        clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=16, intercept_scaling=1,
-                                 class_weight=None, random_state=None, solver='liblinear', max_iter=100,
-                                 multi_class='ovr', verbose=0)
+    """
+    # Use Logistic Regression instead of SVM
+    clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=16, intercept_scaling=1,
+                             class_weight=None, random_state=None, solver='liblinear', max_iter=100,
+                             multi_class='ovr', verbose=0)
 
-        # Fit the model
-        clf.fit(feature_vectors, train_set_results)
+    # Fit the model
+    clf.fit(feature_vectors, train_set_results)
 
-        prediction_object = Prediction()
-        for im in validation_set:
-            print("Predicting ", im, "...")
+    prediction_object = Prediction()
+    for im in validation_set:
+        print("Predicting ", im, "...")
 
-            # Calculate Zernike moments
-            validation_feature_vector = shape_extractor.extract_zernike(im)
+        # Calculate Zernike moments
+        validation_feature_vector = shape_extractor.extract_zernike(im)
 
-            #validation_feature_vector = color_extractor.extract_hog(im)
-            # Extract validation_feature_vector
-            validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
+        #validation_feature_vector = color_extractor.extract_hog(im)
+        # Extract validation_feature_vector
+        validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
 
-            # Extract the same color features as the training phase
-            hue = color_extractor.extract_hue(im)
-            validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+        # Extract the same color features as the training phase
+        hue = color_extractor.extract_hue(im)
+        validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
 
-            # And the same shape features
-            contour = shape_extractor.calculateRimContour(hue)
-            shape_features = shape_extractor.calculateGeometricMoments(contour)
-            validation_feature_vector = append(validation_feature_vector, shape_features)
+        # And the same shape features
+        contour = shape_extractor.calculateRimContour(hue)
+        shape_features = shape_extractor.calculateGeometricMoments(contour)
+        validation_feature_vector = append(validation_feature_vector, shape_features)
 
-            # Calculate the DCT coeffs
-            validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
+        # Calculate the DCT coeffs
+        validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
 
-            #print(clf.predict(validation_feature_vector)[0])
+        #print(clf.predict(validation_feature_vector)[0])
 
-            prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
+        prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 
-        # Evaluate and add to logloss
-        print(prediction_object.evaluate(validation_set_results))
-        avg_logloss += prediction_object.evaluate(validation_set_results)
+    # Evaluate and add to logloss
+    print(prediction_object.evaluate(validation_set_results))
+    avg_logloss += prediction_object.evaluate(validation_set_results)
 
-    print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss/k)
+    print("Logloss score of the predictor: ", avg_logloss)
 
 
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
 train_images = get_images_from_directory(train_images_dir)
 results = get_results(train_images_dir)
-new_set, new_results = get_training_set(100, train_images, results, 1337)
-classify_traffic_signs(2,new_set,new_results)
-print(len(new_set))
+
+# Either use this (works only for 2 folds)
+new_train_set, new_validation_set, new_train_set_results, new_validation_set_results = get_training_set(200, train_images, results, 1337, 2)
+score1 = classify_traffic_signs(new_train_set, new_validation_set, new_train_set_results, new_validation_set_results)
+score2 = classify_traffic_signs(new_validation_set, new_train_set, new_validation_set_results, new_train_set_results)
+print("Avg score = ", (score1+score2)/2)
+
+# Or use
+# kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
+# scores = []
+#for train, validation in kf:
+#
+#        # Divide the train_images in a training and validation set (using KFold)
+#        train_set = [train_images[i] for i in train]
+#        validation_set = [train_images[i] for i in validation]
+#        train_set_results = [results[i] for i in train]
+#        validation_set_results = [results[i] for i in validation]
+#        scores.append(classify_traffic_signs(train_set, validation_set, train_set_results, validation_set_results))
+# print("Avg score = ", sum(scores)/len(scores))
+

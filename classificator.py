@@ -152,24 +152,24 @@ def classify_traffic_signs(k,train_images,results):
             print("Training ", image, "...")
 
             # First, calculate the Zernike moments
-            feature_vector = shape_extractor.extract_zernike(image)
+            #feature_vector = shape_extractor.extract_zernike(image)
 
 
             # Then the HOG, our most important feature(s)
-            #feature_vector = color_extractor.extract_hog(image)
-            feature_vector = append(feature_vector, color_extractor.extract_hog(image))
+            feature_vector = color_extractor.extract_hog(image)
+            #feature_vector = append(feature_vector, color_extractor.extract_hog(image))
 
             # Then we extract the color features
-            hue = color_extractor.extract_hue(image)
-            feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
+            #hue = color_extractor.extract_hue(image)
+            #feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
 
             # Then we add the shape_features using the hue from the color edxtractor
-            contour = shape_extractor.calculateRimContour(hue)
-            shape_features = shape_extractor.calculateGeometricMoments(contour)
-            feature_vector = append(feature_vector, shape_features)
+            #contour = shape_extractor.calculateRimContour(hue)
+            #shape_features = shape_extractor.calculateGeometricMoments(contour)
+            #feature_vector = append(feature_vector, shape_features)
 
             # Finally we append DCT coefficients
-            feature_vector = append(feature_vector,symbol_extractor.calculateDCT(image))
+            #feature_vector = append(feature_vector,symbol_extractor.calculateDCT(image))
 
             # Append our feature_vector to the feature_vectors
             feature_vectors.append(feature_vector)
@@ -197,23 +197,23 @@ def classify_traffic_signs(k,train_images,results):
             print("Predicting ", im, "...")
 
             # Calculate Zernike moments
-            validation_feature_vector = shape_extractor.extract_zernike(im)
+            #validation_feature_vector = shape_extractor.extract_zernike(im)
 
-            #validation_feature_vector = color_extractor.extract_hog(im)
             # Extract validation_feature_vector
-            validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
+            validation_feature_vector = color_extractor.extract_hog(im)
+            #validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
 
             # Extract the same color features as the training phase
-            hue = color_extractor.extract_hue(im)
-            validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+            #hue = color_extractor.extract_hue(im)
+            #validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
 
             # And the same shape features
-            contour = shape_extractor.calculateRimContour(hue)
-            shape_features = shape_extractor.calculateGeometricMoments(contour)
-            validation_feature_vector = append(validation_feature_vector, shape_features)
+            #contour = shape_extractor.calculateRimContour(hue)
+            #shape_features = shape_extractor.calculateGeometricMoments(contour)
+            #validation_feature_vector = append(validation_feature_vector, shape_features)
 
             # Calculate the DCT coeffs
-            validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
+            #validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
 
             #print(clf.predict(validation_feature_vector)[0])
 
@@ -226,10 +226,19 @@ def classify_traffic_signs(k,train_images,results):
 
     print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss/k)
 
-
+"""
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
 train_images = get_images_from_directory(train_images_dir)
 results = get_results(train_images_dir)
 new_set, new_results = get_training_set(100, train_images, results, 1337)
+
 classify_traffic_signs(2,new_set,new_results)
-print(len(new_set))
+"""
+
+train_images_dir = os.path.join(os.path.dirname(__file__), "train")
+test_images_dir = os.path.join(os.path.dirname(__file__), "test")
+
+train_images = get_images_from_directory(train_images_dir)
+results = get_results(train_images_dir)
+
+classify_traffic_signs(2,train_images,results)

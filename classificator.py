@@ -178,9 +178,7 @@ def get_training_set(nr_samples, training_set, results, seed, k):
 
 
 
-def classify_traffic_signs(train_set,validation_set,train_set_results, validation_set_results):
-
-    avg_logloss = 0
+def classify_traffic_signs(train_set,validation_set, train_set_results, validation_set_results):
 
     # Iterate over the training set and transform each input vector to a feature vector
     feature_vectors = []
@@ -189,8 +187,6 @@ def classify_traffic_signs(train_set,validation_set,train_set_results, validatio
     symbol_extractor = SymbolFeatureExtractor()
 
     for image in train_set:
-
-        print("Training ", image, "...")
 
         # First, calculate the Zernike moments
         feature_vector = shape_extractor.extract_zernike(image)
@@ -235,7 +231,6 @@ def classify_traffic_signs(train_set,validation_set,train_set_results, validatio
 
     prediction_object = Prediction()
     for im in validation_set:
-        print("Predicting ", im, "...")
 
         # Calculate Zernike moments
         validation_feature_vector = shape_extractor.extract_zernike(im)
@@ -260,34 +255,32 @@ def classify_traffic_signs(train_set,validation_set,train_set_results, validatio
 
         prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
-
-    # Evaluate and add to logloss
-    print(prediction_object.evaluate(validation_set_results))
-    avg_logloss += prediction_object.evaluate(validation_set_results)
-
-    print("Logloss score of the predictor: ", avg_logloss)
+    return prediction_object.evaluate(validation_set_results)
 
 
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
 train_images = get_images_from_directory(train_images_dir)
 results = get_results(train_images_dir)
 
-# Either use this (works only for 2 folds)
-new_train_set, new_validation_set, new_train_set_results, new_validation_set_results = get_training_set(200, train_images, results, 1337, 2)
-score1 = classify_traffic_signs(new_train_set, new_validation_set, new_train_set_results, new_validation_set_results)
-score2 = classify_traffic_signs(new_validation_set, new_train_set, new_validation_set_results, new_train_set_results)
-print("Avg score = ", (score1+score2)/2)
+sizes = [256, 512, 1024, 2048]
+
+for size in sizes:
+    print("Calculating the logloss for size: ", size)
+    new_train_set, new_validation_set, new_train_set_results, new_validation_set_results = get_training_set(size, train_images, results, 1337, 2)
+    score1 = classify_traffic_signs(new_train_set, new_validation_set, new_train_set_results, new_validation_set_results)
+    score2 = classify_traffic_signs(new_validation_set, new_train_set, new_validation_set_results, new_train_set_results)
+    print("Avg score using a dataset of size ", size, " = ", (score1+score2)/2)
 
 # Or use
-# kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
-# scores = []
-#for train, validation in kf:
-#
-#        # Divide the train_images in a training and validation set (using KFold)
-#        train_set = [train_images[i] for i in train]
-#        validation_set = [train_images[i] for i in validation]
-#        train_set_results = [results[i] for i in train]
-#        validation_set_results = [results[i] for i in validation]
-#        scores.append(classify_traffic_signs(train_set, validation_set, train_set_results, validation_set_results))
-# print("Avg score = ", sum(scores)/len(scores))
+print("Calculating the logloss for size: ", len(train_images))
+kf = KFold(len(train_images), n_folds=2, shuffle=True, random_state=1337)
+scores = []
+for train, validation in kf:
+        # Divide the train_images in a training and validation set (using KFold)
+        train_set = [train_images[i] for i in train]
+        validation_set = [train_images[i] for i in validation]
+        train_set_results = [results[i] for i in train]
+        validation_set_results = [results[i] for i in validation]
+        scores.append(classify_traffic_signs(train_set, validation_set, train_set_results, validation_set_results))
+print("Avg score using a dataset of size ", len(train_images), " = ", sum(scores)/len(scores))
 

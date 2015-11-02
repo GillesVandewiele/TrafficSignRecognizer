@@ -295,9 +295,13 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
 
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
 train_images = get_images_from_directory(train_images_dir)
-all_train_images = train_images
+all_train_images = []
+for image in train_images:
+    all_train_images.append(image)
 results = get_results(train_images_dir)
-all_results = results
+all_results = []
+for result in results:
+    all_results.append(result)
 
 sizes = [256, 256, 512, 1024]
 
@@ -337,6 +341,6 @@ for train, validation in kf:
         validation_score, train_score = classify_traffic_signs(train_set, validation_set, train_set_results, validation_set_results)
         validation_scores.append(validation_score)
         train_scores.append(train_score)
-print("Avg training score using a dataset of size ", len(train_images), " = ", sum(train_scores)/len(train_scores))
-print("Avg validation score using a dataset of size ", len(train_images), " = ", sum(validation_scores)/len(validation_scores))
+print("Avg training score using a dataset of size ", len(all_train_images), " = ", sum(train_scores)/len(train_scores))
+print("Avg validation score using a dataset of size ", len(all_train_images), " = ", sum(validation_scores)/len(validation_scores))
 

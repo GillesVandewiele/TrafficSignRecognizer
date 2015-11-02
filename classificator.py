@@ -324,5 +324,5 @@ for train, validation in kf:
         validation_scores.append(validation_score)
         train_scores.append(train_score)
 print("Avg training score using a dataset of size ", len(train_images), " = ", sum(train_scores)/len(train_scores))
-print("Avg validation score using a dataset of size ", len(train_images), " = ", sum(validation_score)/len(validation_score))
+print("Avg validation score using a dataset of size ", len(train_images), " = ", sum(validation_scores)/len(validation_scores))
 

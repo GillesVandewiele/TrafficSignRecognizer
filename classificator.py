@@ -95,7 +95,7 @@ def get_training_set(nr_samples, training_set, results, seed):
     training_set_per_class = {}
     results_set_per_class = {}
     results_set = sorted(set(results))
-    for i in range(nr_classes):
+    for i in range(len(results_set)):
         training_set_per_class[results_set[i]] = []
         results_set_per_class[results_set[i]] = []
 
@@ -108,25 +108,27 @@ def get_training_set(nr_samples, training_set, results, seed):
     new_validation_set = []
     new_train_results = []
     new_validation_results = []
-    for i in range(nr_classes):
-        # Put an element in the new training set
-        index = random.randint(0, len(training_set_per_class[results_set[i]])-1)
-        new_train_set.append(training_set_per_class[results_set[i]][index])
-        training_set_per_class[results_set[i]].pop(index)
-        results_set_per_class[results_set[i]].pop(index)
-        new_train_results.append(results_set[i])
+    remaining_samples = nr_samples
+    if(min([len(training_set_per_class[i]) for i in training_set_per_class]) > 1):
+        for i in range(len(results_set)):
+            # Put an element in the new training set
+            index = random.randint(0, len(training_set_per_class[results_set[i]])-1)
+            new_train_set.append(training_set_per_class[results_set[i]][index])
+            training_set_per_class[results_set[i]].pop(index)
+            results_set_per_class[results_set[i]].pop(index)
+            new_train_results.append(results_set[i])
 
-        # And in the validation set
-        index = random.randint(0, len(training_set_per_class[results_set[i]])-1)
-        new_validation_set.append(training_set_per_class[results_set[i]][index])
-        training_set_per_class[results_set[i]].pop(index)
-        results_set_per_class[results_set[i]].pop(index)
-        new_validation_results.append(results_set[i])
+            # And in the validation set
+            index = random.randint(0, len(training_set_per_class[results_set[i]])-1)
+            new_validation_set.append(training_set_per_class[results_set[i]][index])
+            training_set_per_class[results_set[i]].pop(index)
+            results_set_per_class[results_set[i]].pop(index)
+            new_validation_results.append(results_set[i])
 
-    remaining_samples = nr_samples-2*nr_classes
+        remaining_samples = nr_samples-2*len(results_set)
 
     # Now use the previous calculated distributions to assign the required amount of remaining samples to the dataset
-    values = arange(nr_classes)
+    values = arange(len(results_set))
     probs = sorted(benchmark.occurrenceProbabilities.values())
     custm = rv_discrete(values=(values, probs))
     results_set = sorted(flatten_dict_values(results_set_per_class))
@@ -146,7 +148,7 @@ def get_training_set(nr_samples, training_set, results, seed):
         results_set_per_class[results_set[sign]].pop(index)
         new_train_results.append(results_set[sign])
 
-    values = arange(nr_classes)
+    values = arange(len(results_set))
     probs = sorted(benchmark.occurrenceProbabilities.values())
     custm = rv_discrete(values=(values, probs))
     results_set = sorted(flatten_dict_values(results_set_per_class))
@@ -293,33 +295,45 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
 
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
 train_images = get_images_from_directory(train_images_dir)
+all_train_images = train_images
 results = get_results(train_images_dir)
+all_results = results
 
-sizes = [256, 512, 1024, 2048]
+sizes = [256, 256, 512, 1024]
+
+new_train_set = []
+new_validation_set = []
+new_train_set_results = []
+new_validation_set_results = []
 
 for size in sizes:
-    print("Calculating the logloss for size: ", size)
-    new_train_set, new_validation_set, new_train_set_results, new_validation_set_results = get_training_set(size, train_images, results, 1337)
-    print(new_train_set)
-    print(new_train_set_results)
-    print(new_validation_set)
-    print(new_validation_set_results)
+    new_train_set_temp, new_validation_set_temp, new_train_set_results_temp, new_validation_set_results_temp = get_training_set(size, train_images, results, 1337)
+    new_train_set.extend(new_train_set_temp)
+    new_validation_set.extend(new_validation_set_temp)
+    new_train_set_results.extend(new_train_set_results_temp)
+    new_validation_set_results.extend(new_validation_set_results_temp)
+    print("Calculating the logloss for size: ", len(new_train_set)+len(new_validation_set))
     [validation_score1, train_score1] = classify_traffic_signs(new_train_set, new_validation_set, new_train_set_results, new_validation_set_results)
     [validation_score2, train_score2] = classify_traffic_signs(new_validation_set, new_train_set, new_validation_set_results, new_train_set_results)
-    print("Avg training score using a dataset of size ", size, " = ", (train_score1+train_score2)/2)
-    print("Avg validation score using a dataset of size ", size, " = ", (validation_score1+validation_score2)/2)
+    for i in range(len(new_train_set_temp)):
+        train_images.pop(train_images.index(new_train_set_temp[i]))
+        results.pop(results.index(new_train_set_results_temp[i]))
+        train_images.pop(train_images.index(new_validation_set_temp[i]))
+        results.pop(results.index(new_validation_set_results_temp[i]))
+    print("Avg training score using a dataset of size ", len(new_train_set)+len(new_validation_set), " = ", (train_score1+train_score2)/2)
+    print("Avg validation score using a dataset of size ", len(new_train_set)+len(new_validation_set), " = ", (validation_score1+validation_score2)/2)
 
 # Or use
-print("Calculating the logloss for size: ", len(train_images))
-kf = KFold(len(train_images), n_folds=2, shuffle=True, random_state=1337)
+print("Calculating the logloss for size: ", len(all_train_images))
+kf = KFold(len(all_train_images), n_folds=2, shuffle=True, random_state=1337)
 validation_scores = []
 train_scores = []
 for train, validation in kf:
         # Divide the train_images in a training and validation set (using KFold)
-        train_set = [train_images[i] for i in train]
-        validation_set = [train_images[i] for i in validation]
-        train_set_results = [results[i] for i in train]
-        validation_set_results = [results[i] for i in validation]
+        train_set = [all_train_images[i] for i in train]
+        validation_set = [all_train_images[i] for i in validation]
+        train_set_results = [all_results[i] for i in train]
+        validation_set_results = [all_results[i] for i in validation]
         validation_score, train_score = classify_traffic_signs(train_set, validation_set, train_set_results, validation_set_results)
         validation_scores.append(validation_score)
         train_scores.append(train_score)

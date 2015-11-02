@@ -39,29 +39,39 @@ results = get_results(train_images_dir)
 feature_vectors = []
 color_extractor = ColorFeatureExtractor()
 shape_extractor = ShapeFeatureExtractor()
+symbol_extractor = SymbolFeatureExtractor()
 
 for image in train_images:
-    print("Train: ", image)
-    feature_vector = color_extractor.extract_hog(image)
-    #print(len(feature_vector))
+    print("Training ", image, "...")
 
-    # First we extract the color features
-    #hue = color_extractor.extract_hue(image)
-    #feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
+    # First, calculate the Zernike moments
+    feature_vector = shape_extractor.extract_zernike(image)
 
-    # Then we add the shape_features
-    #shape_features = shape_extractor.predictShape(hue)
-    #feature_vector = append(feature_vector, shape_features)
 
-    #TODO: extract symbol/icon features
+    # Then the HOG, our most important feature(s)
+    #feature_vector = color_extractor.extract_hog(image)
+    feature_vector = append(feature_vector, color_extractor.extract_hog(image))
 
+    # Then we extract the color features
+    hue = color_extractor.extract_hue(image)
+    feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
+
+    # Then we add the shape_features using the hue from the color edxtractor
+    contour = shape_extractor.calculateRimContour(hue)
+    shape_features = shape_extractor.calculateGeometricMoments(contour)
+    feature_vector = append(feature_vector, shape_features)
+
+    # Finally we append DCT coefficients
+    feature_vector = append(feature_vector,symbol_extractor.calculateDCT(image))
+
+    # Append our feature_vector to the feature_vectors
     feature_vectors.append(feature_vector)
 
 """
 clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
                   random_state=None, shrinking=False, tol=0.001, verbose=False)
 """
-clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=1.0, intercept_scaling=1,
+clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1,
                          class_weight=None, random_state=None, solver='liblinear', max_iter=100,
                          multi_class='ovr', verbose=0)
 clf.fit(feature_vectors, results)
@@ -70,15 +80,26 @@ clf.fit(feature_vectors, results)
 prediction_object = Prediction()
 for im in test_images:
     print("Predict: ", im)
-    validation_feature_vector = color_extractor.extract_hog(im)
+
+    # Calculate Zernike moments
+    validation_feature_vector = shape_extractor.extract_zernike(im)
+
+    #validation_feature_vector = color_extractor.extract_hog(im)
+    # Extract validation_feature_vector
+    validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
 
     # Extract the same color features as the training phase
-    #hue = color_extractor.extract_hue(im)
-    #validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+    hue = color_extractor.extract_hue(im)
+    validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
 
     # And the same shape features
-    #shape_features = shape_extractor.predictShape(hue)
-    #validation_feature_vector = append(validation_feature_vector, shape_features)
+    contour = shape_extractor.calculateRimContour(hue)
+    shape_features = shape_extractor.calculateGeometricMoments(contour)
+    validation_feature_vector = append(validation_feature_vector, shape_features)
+
+    # Calculate the DCT coeffs
+    validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
+
     prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 FileParser.write_CSV("submission.xlsx", prediction_object)

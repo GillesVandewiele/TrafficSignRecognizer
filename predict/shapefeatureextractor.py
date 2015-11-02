@@ -1,12 +1,11 @@
 import cv2
 import mahotas
 from pylab import *
-<<<<<<< HEAD:predict/shapepredictor.py
 import matplotlib.pyplot as plt
+from skimage import color
 from skimage.morphology import convex_hull_image
 from predict.predictor import Predictor
-=======
->>>>>>> master:predict/shapefeatureextractor.py
+
 
 __author__ = 'Group16'
 
@@ -82,10 +81,6 @@ class ShapeFeatureExtractor():
 
         return [E, T, O, R]
 
-    @staticmethod
-    def calculateZernikMoments(contour):
-        return []
-
     def extract_zernike(self, element):
-        return mahotas.features.zernike_moments(resize(color.rgb2gray(imread(element)), (64, 64)), radius=64, degree=10)
+        return mahotas.features.zernike_moments(resize(color.rgb2gray(imread(element)), (96, 96)), radius=96, degree=10)
 

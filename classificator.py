@@ -1,8 +1,11 @@
 import os
-from numpy import append
+from numpy import append, arange, delete, where
+import random
+from scipy.stats import rv_discrete
 from sklearn.cross_validation import KFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+from predict.benchmark import BenchmarkPredictor
 from predict.colorfeatureextractor import ColorFeatureExtractor
 from predict.prediction import Prediction
 from predict.shapefeatureextractor import ShapeFeatureExtractor
@@ -66,15 +69,64 @@ def transform_classes(results):
     return new_classes
 """
 
-def classify_traffic_signs(k):
-    # Get the images and results from the directories train and test
-    train_images_dir = os.path.join(os.path.dirname(__file__), "train")
-    test_images_dir = os.path.join(os.path.dirname(__file__), "test")
+def get_training_set(nr_samples, training_set, results, seed):
+    if(nr_samples < 81):
+        # Fuck exceptions
+        print("Number of samples should be greater than 81")
+        return
 
-    train_images = get_images_from_directory(train_images_dir)
-    results = get_results(train_images_dir)
+    random.seed(seed)
 
-    test_images = get_images_from_directory(test_images_dir)
+    nr_classes = len(Prediction.TRAFFIC_SIGNS)
+
+    # Use the benchmark predictor to calculate the occurrence of each class
+    benchmark = BenchmarkPredictor()
+    benchmark.train(training_set, results)
+
+    # Divide the training set in his classes
+    training_set_per_class = {}
+    results_set = sorted(set(results))
+    for i in range(nr_classes):
+        training_set_per_class[results_set[i]] = []
+
+    for i in range(len(training_set)):
+        training_set_per_class[results[i]].append(training_set[i])
+
+    # First add a sample of each class to the new training set
+    sign_counter = 0
+    new_training_set = []
+    new_results = []
+    for i in range(nr_classes):
+        index = random.randint(0, len(training_set_per_class[results_set[i]])-1)
+        new_training_set.append(training_set_per_class[results_set[i]][index])
+        training_set_per_class[results_set[i]].pop(index)
+        new_results.append(results_set[i])
+
+    # Now use the previous calculated distributions to assign the required amount of remaining samples to the dataset
+    values = arange(nr_classes)
+    probs = sorted(benchmark.occurrenceProbabilities.values())
+    custm = rv_discrete(values=(values, probs))
+    for i in range(nr_samples - nr_classes):
+        sign = custm.rvs(size=1)
+        while(len(training_set_per_class[results_set[sign]]) == 0):
+            values = delete(values, where(values==sign))
+            probs = delete(probs, where(probs==sign))
+            custm = rv_discrete(values=(values, probs))
+            results_set.pop(sign)
+            sign = custm.rvs(size=1)
+
+        index = random.randint(0, len(training_set_per_class[results_set[sign]])-1)
+        new_training_set.append(training_set_per_class[results_set[sign]][index])
+        training_set_per_class[results_set[sign]].pop(index)
+        new_results.append(results_set[sign])
+
+    return [new_training_set, new_results]
+
+
+
+
+
+def classify_traffic_signs(k,train_images,results):
 
     # Decide on indices of training and validation data using k-fold cross validation
     kf = KFold(len(train_images), n_folds=k, shuffle=True, random_state=1337)
@@ -102,15 +154,18 @@ def classify_traffic_signs(k):
             # First, calculate the Zernike moments
             feature_vector = shape_extractor.extract_zernike(image)
 
+
             # Then the HOG, our most important feature(s)
+            #feature_vector = color_extractor.extract_hog(image)
             feature_vector = append(feature_vector, color_extractor.extract_hog(image))
 
             # Then we extract the color features
             hue = color_extractor.extract_hue(image)
             feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
 
-            # Then we add the shape_features using the hue from the color extractor
-            shape_features = shape_extractor.predictShape(hue)
+            # Then we add the shape_features using the hue from the color edxtractor
+            contour = shape_extractor.calculateRimContour(hue)
+            shape_features = shape_extractor.calculateGeometricMoments(contour)
             feature_vector = append(feature_vector, shape_features)
 
             # Finally we append DCT coefficients
@@ -125,12 +180,12 @@ def classify_traffic_signs(k):
         # Allocate 1 GB of memory for our kernel
         # We are using seed 1337 to always get the same results (can be put on None for testing)
         """
-        clf = SVC(C=0.25, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
+        clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
                   random_state=1337, shrinking=False, tol=0.0001, verbose=False)
-        """
 
+        """
         # Use Logistic Regression instead of SVM
-        clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=1.0, intercept_scaling=1,
+        clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=16, intercept_scaling=1,
                                  class_weight=None, random_state=None, solver='liblinear', max_iter=100,
                                  multi_class='ovr', verbose=0)
 
@@ -144,7 +199,8 @@ def classify_traffic_signs(k):
             # Calculate Zernike moments
             validation_feature_vector = shape_extractor.extract_zernike(im)
 
-            # Extract HOG
+            #validation_feature_vector = color_extractor.extract_hog(im)
+            # Extract validation_feature_vector
             validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
 
             # Extract the same color features as the training phase
@@ -152,20 +208,28 @@ def classify_traffic_signs(k):
             validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
 
             # And the same shape features
-            shape_features = shape_extractor.predictShape(hue)
+            contour = shape_extractor.calculateRimContour(hue)
+            shape_features = shape_extractor.calculateGeometricMoments(contour)
             validation_feature_vector = append(validation_feature_vector, shape_features)
 
             # Calculate the DCT coeffs
             validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
 
-            print(clf.predict(validation_feature_vector)[0])
-            prediction_object.addPrediction(clf.predict(validation_feature_vector)[0])
+            #print(clf.predict(validation_feature_vector)[0])
+
+            prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 
         # Evaluate and add to logloss
-        print(prediction_object.evaluate_binary(validation_set_results))
-        avg_logloss += prediction_object.evaluate_binary(validation_set_results)
+        print(prediction_object.evaluate(validation_set_results))
+        avg_logloss += prediction_object.evaluate(validation_set_results)
 
     print("Average logloss score of the predictor using ", k, " folds: ", avg_logloss/k)
 
-classify_traffic_signs(2)
+
+train_images_dir = os.path.join(os.path.dirname(__file__), "train")
+train_images = get_images_from_directory(train_images_dir)
+results = get_results(train_images_dir)
+new_set, new_results = get_training_set(100, train_images, results, 1337)
+classify_traffic_signs(2,new_set,new_results)
+print(len(new_set))

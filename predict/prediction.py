@@ -66,7 +66,7 @@ class Prediction(object):
                      # Rectangles up
                      "B21",     # Tegenliggers hebben geen voorrang
                      "E9a",     # Parking
-                     "E9a_miva",# Tim zijn parking
+                     "E9a_miva",# Gilles zijn parking
                      "E9b",     # Parking voor auto's
                      "E9cd",    # Parking vrachtwagens
                      "E9e",     # Parking met hefboom

@@ -69,6 +69,10 @@ def transform_classes(results):
     return new_classes
 """
 
+from itertools import chain
+def flatten_dict_values(dictionary):
+     return set(chain(*dictionary.values()))
+
 def get_training_set(nr_samples, training_set, results, seed):
     nr_classes = len(Prediction.TRAFFIC_SIGNS)
 
@@ -125,7 +129,7 @@ def get_training_set(nr_samples, training_set, results, seed):
     values = arange(nr_classes)
     probs = sorted(benchmark.occurrenceProbabilities.values())
     custm = rv_discrete(values=(values, probs))
-    results_set = sorted(set(results))
+    results_set = sorted(flatten_dict_values(results_set_per_class))
     for j in range(int(remaining_samples/2)):
         sign = custm.rvs(size=1)
         while(len(training_set_per_class[results_set[sign]]) == 0):
@@ -137,14 +141,15 @@ def get_training_set(nr_samples, training_set, results, seed):
 
         index = random.randint(0, len(training_set_per_class[results_set[sign]])-1)
         new_train_set.append(training_set_per_class[results_set[sign]][index])
+        print(len(training_set_per_class[results_set[sign]]), len(results_set_per_class[results_set[sign]]), index)
         training_set_per_class[results_set[sign]].pop(index)
-        results_set_per_class[results_set[i]].pop(index)
+        results_set_per_class[results_set[sign]].pop(index)
         new_train_results.append(results_set[sign])
 
     values = arange(nr_classes)
     probs = sorted(benchmark.occurrenceProbabilities.values())
     custm = rv_discrete(values=(values, probs))
-    results_set = sorted(set(results))
+    results_set = sorted(flatten_dict_values(results_set_per_class))
     for j in range(int(remaining_samples/2)):
         # And 1 sample to the validation set
         sign = custm.rvs(size=1)
@@ -158,7 +163,7 @@ def get_training_set(nr_samples, training_set, results, seed):
         index = random.randint(0, len(training_set_per_class[results_set[sign]])-1)
         new_validation_set.append(training_set_per_class[results_set[sign]][index])
         training_set_per_class[results_set[sign]].pop(index)
-        results_set_per_class[results_set[i]].pop(index)
+        results_set_per_class[results_set[sign]].pop(index)
         new_validation_results.append(results_set[sign])
 
     return [new_train_set, new_validation_set, new_train_results, new_validation_results]
@@ -218,7 +223,33 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
     # Fit the model
     clf.fit(feature_vectors, train_set_results)
 
-    prediction_object = Prediction()
+    train_prediction_object = Prediction()
+    for im in train_set:
+
+        # Calculate Zernike moments
+        validation_feature_vector = shape_extractor.extract_zernike(im)
+
+        #validation_feature_vector = color_extractor.extract_hog(im)
+        # Extract validation_feature_vector
+        validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
+
+        # Extract the same color features as the training phase
+        hue = color_extractor.extract_hue(im)
+        validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+
+        # And the same shape features
+        contour = shape_extractor.calculateRimContour(hue)
+        shape_features = shape_extractor.calculateGeometricMoments(contour)
+        validation_feature_vector = append(validation_feature_vector, shape_features)
+
+        # Calculate the DCT coeffs
+        validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
+
+        #print(clf.predict(validation_feature_vector)[0])
+
+        train_prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
+
+    validation_prediction_object = Prediction()
     for im in validation_set:
 
         # Calculate Zernike moments
@@ -242,9 +273,9 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
 
         #print(clf.predict(validation_feature_vector)[0])
 
-        prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
+        validation_prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
-    return prediction_object.evaluate(validation_set_results)
+    return [validation_prediction_object.evaluate(validation_set_results), train_prediction_object.evaluate(train_set_results)]
 
 
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
@@ -256,20 +287,25 @@ sizes = [256, 512, 1024, 2048]
 for size in sizes:
     print("Calculating the logloss for size: ", size)
     new_train_set, new_validation_set, new_train_set_results, new_validation_set_results = get_training_set(size, train_images, results, 1337)
-    score1 = classify_traffic_signs(new_train_set, new_validation_set, new_train_set_results, new_validation_set_results)
-    score2 = classify_traffic_signs(new_validation_set, new_train_set, new_validation_set_results, new_train_set_results)
-    print("Avg score using a dataset of size ", size, " = ", (score1+score2)/2)
+    [validation_score1, train_score1] = classify_traffic_signs(new_train_set, new_validation_set, new_train_set_results, new_validation_set_results)
+    [validation_score2, train_score2] = classify_traffic_signs(new_validation_set, new_train_set, new_validation_set_results, new_train_set_results)
+    print("Avg training score using a dataset of size ", size, " = ", (train_score1+train_score2)/2)
+    print("Avg validation score using a dataset of size ", size, " = ", (validation_score1+validation_score2)/2)
 
 # Or use
 print("Calculating the logloss for size: ", len(train_images))
 kf = KFold(len(train_images), n_folds=2, shuffle=True, random_state=1337)
-scores = []
+validation_scores = []
+train_scores = []
 for train, validation in kf:
         # Divide the train_images in a training and validation set (using KFold)
         train_set = [train_images[i] for i in train]
         validation_set = [train_images[i] for i in validation]
         train_set_results = [results[i] for i in train]
         validation_set_results = [results[i] for i in validation]
-        scores.append(classify_traffic_signs(train_set, validation_set, train_set_results, validation_set_results))
-print("Avg score using a dataset of size ", len(train_images), " = ", sum(scores)/len(scores))
+        validation_score, train_score = classify_traffic_signs(train_set, validation_set, train_set_results, validation_set_results)
+        validation_scores.append(validation_score)
+        train_scores.append(train_score)
+print("Avg training score using a dataset of size ", len(train_images), " = ", sum(train_scores)/len(train_scores))
+print("Avg validation score using a dataset of size ", len(train_images), " = ", sum(validation_score)/len(validation_score))
 

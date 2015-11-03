@@ -1,4 +1,5 @@
 import os
+import cv2
 from numpy import append, arange, delete, where
 import random
 from scipy.stats import rv_discrete
@@ -123,6 +124,11 @@ def get_training_set(nr_samples, training_set, results, seed):
     return [new_training_set, new_results]
 
 
+def readAndDenoiseImage(image):
+    img = cv2.imread(image,1)
+    color_image = cv2.fastNlMeansDenoisingColored(img,3,3,7,21)
+    gray_image = cv2.cvtColor(color_image, cv2.COLOR_RGB2GRAY)
+    return [color_image,gray_image]
 
 
 
@@ -148,15 +154,16 @@ def classify_traffic_signs(k,train_images,results):
         symbol_extractor = SymbolFeatureExtractor()
 
         for image in train_set:
-
             print("Training ", image, "...")
+
+            [color_image,gray_image] = readAndDenoiseImage(image)
 
             # First, calculate the Zernike moments
             #feature_vector = shape_extractor.extract_zernike(image)
 
 
             # Then the HOG, our most important feature(s)
-            feature_vector = color_extractor.extract_hog(image)
+            feature_vector = color_extractor.extract_hog(gray_image)
             #feature_vector = append(feature_vector, color_extractor.extract_hog(image))
 
             # Then we extract the color features
@@ -196,11 +203,13 @@ def classify_traffic_signs(k,train_images,results):
         for im in validation_set:
             print("Predicting ", im, "...")
 
+            [color_image,gray_image] = readAndDenoiseImage(im)
+
             # Calculate Zernike moments
             #validation_feature_vector = shape_extractor.extract_zernike(im)
 
             # Extract validation_feature_vector
-            validation_feature_vector = color_extractor.extract_hog(im)
+            validation_feature_vector = color_extractor.extract_hog(gray_image)
             #validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
 
             # Extract the same color features as the training phase

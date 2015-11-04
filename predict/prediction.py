@@ -55,7 +55,7 @@ class Prediction(object):
                      "F35",     # Toeristische richtingaanwijzers (bruin, bv naar voetbalploeg/bezienswaardigheid)
                      "F41",     # Richtingaanwijzer tijdens werken (rood)
                      "F43",     # Geel gemeentebord (bebouwde kom)
-                     "Handic",  # Tim zijn parkeerplaats
+                     "Handic",  # Gilles zijn parkeerplaats
                      "lang",    # Wit bord met pijl naar boven en beneden
                      "m",       # Uitgezonderd fietsers en bromfietsers
 

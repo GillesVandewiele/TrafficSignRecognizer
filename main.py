@@ -71,10 +71,15 @@ for image in train_images:
 clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
                   random_state=None, shrinking=False, tol=0.001, verbose=False)
 """
-clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1,
+clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=16, intercept_scaling=1,
                          class_weight=None, random_state=None, solver='liblinear', max_iter=100,
                          multi_class='ovr', verbose=0)
-clf.fit(feature_vectors, results)
+
+# Logistic Regression for feature selection, higher C = more features will be deleted
+clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
+new_feature_vectors = clf2.fit_transform(feature_vectors, results)
+
+clf.fit(new_feature_vectors, results)
 
 # Testing phase
 prediction_object = Prediction()
@@ -100,7 +105,8 @@ for im in test_images:
     # Calculate the DCT coeffs
     validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
 
-    prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
+    new_validation_feature_vector = clf2.transform(validation_feature_vector)
+    prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
 
 FileParser.write_CSV("submission.xlsx", prediction_object)
 

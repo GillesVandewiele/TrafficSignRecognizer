@@ -185,9 +185,9 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
 
     for image in train_set:
 
-        feature_vector = color_extractor.extract_hog(image)
+        #feature_vector = symbol_extractor.calculateDCT(image)
 
-        """
+
         # First, calculate the Zernike moments
         feature_vector = shape_extractor.extract_zernike(image)
 
@@ -207,7 +207,7 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
 
         # Finally we append DCT coefficients
         feature_vector = append(feature_vector,symbol_extractor.calculateDCT(image))
-        """
+
 
         # Append our feature_vector to the feature_vectors
         feature_vectors.append(feature_vector)
@@ -227,15 +227,19 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
                              class_weight=None, random_state=None, solver='liblinear', max_iter=100,
                              multi_class='ovr', verbose=0)
 
-    # Fit the model
-    clf.fit(feature_vectors, train_set_results)
+    # Logistic Regression for feature selection, higher C = more features will be deleted
+    clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=1)
+    new_feature_vectors = clf2.fit_transform(feature_vectors, train_set_results)
 
+    # Fit the model
+    clf.fit(new_feature_vectors, train_set_results)
+    """
     train_prediction_object = Prediction()
     for im in train_set:
 
+        #validation_feature_vector = symbol_extractor.calculateDCT(im)
 
-        validation_feature_vector = color_extractor.extract_hog(im)
-        """
+
         # Calculate Zernike moments
         validation_feature_vector = shape_extractor.extract_zernike(im)
 
@@ -256,16 +260,16 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
         validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
 
         #print(clf.predict(validation_feature_vector)[0])
-        """
 
-        train_prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
-
+        new_validation_feature_vector = clf2.transform(validation_feature_vector)
+        train_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
+    """
     validation_prediction_object = Prediction()
     for im in validation_set:
 
-        validation_feature_vector = color_extractor.extract_hog(im)
+        #validation_feature_vector = symbol_extractor.calculateDCT(im)
 
-        """
+
         # Calculate Zernike moments
         validation_feature_vector = shape_extractor.extract_zernike(im)
 
@@ -286,11 +290,13 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
         validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
 
         #print(clf.predict(validation_feature_vector)[0])
-        """
 
-        validation_prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
-    return [validation_prediction_object.evaluate(validation_set_results), train_prediction_object.evaluate(train_set_results)]
+        new_validation_feature_vector = clf2.transform(validation_feature_vector)
+        validation_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
+
+    #return [validation_prediction_object.evaluate(validation_set_results), train_prediction_object.evaluate(train_set_results)]
+    return [validation_prediction_object.evaluate(validation_set_results),0]
 
 
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
@@ -302,7 +308,7 @@ results = get_results(train_images_dir)
 all_results = []
 for result in results:
     all_results.append(result)
-
+""""
 sizes = [256, 256, 512, 1024]
 
 new_train_set = []
@@ -326,10 +332,14 @@ for size in sizes:
         results.pop(results.index(new_validation_set_results_temp[i]))
     print("Avg training score using a dataset of size ", len(new_train_set)+len(new_validation_set), " = ", (train_score1+train_score2)/2)
     print("Avg validation score using a dataset of size ", len(new_train_set)+len(new_validation_set), " = ", (validation_score1+validation_score2)/2)
-
+"""
 # Or use
 print("Calculating the logloss for size: ", len(all_train_images))
 kf = KFold(len(all_train_images), n_folds=2, shuffle=True, random_state=1337)
+# kf = KFold(200, n_folds=2, shuffle=True, random_state=1337)
+# all_train_images = all_train_images[700:900]
+# all_results = all_results[700:900]
+
 validation_scores = []
 train_scores = []
 for train, validation in kf:

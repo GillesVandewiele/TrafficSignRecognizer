@@ -1,11 +1,8 @@
 import colorsys
-from cv2 import fastNlMeansDenoisingColored
 from skimage.feature import hog
-from skimage import color
 from numpy import histogram, asarray
-from skimage.io import imread, imsave
+from skimage.io import imsave
 from predict.predictor import Predictor
-from skimage.transform import resize
 
 __author__ = 'Group 16'
 

@@ -1,10 +1,6 @@
 import cv2
 import mahotas
 from pylab import *
-import matplotlib.pyplot as plt
-from skimage import color
-from skimage.morphology import convex_hull_image
-from predict.predictor import Predictor
 
 
 __author__ = 'Group16'

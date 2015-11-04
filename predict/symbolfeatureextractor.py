@@ -1,6 +1,4 @@
 import numpy
-import operator
-from skimage.io import imread
 from sklearn import cluster
 from scipy.misc import imresize
 from scipy import fftpack
@@ -67,4 +65,4 @@ class SymbolFeatureExtractor(Predictor):
             #coefficients.extend([dct[0, 0], dct[0, 1], dct[1, 0], dct[2, 0], dct[1, 1], dct[0, 2], dct[0, 3], dct[1, 2], dct[2, 1], dct[3, 0], dct[4, 0], dct[3, 1], dct[2, 2], dct[1, 3], dct[0, 4], dct[0, 5], dct[1, 4], dct[2, 3], dct[3, 2], dct[4, 1], dct[5, 0]])
             coefficients.extend(dct.reshape(-1))
 
-        return coefficients
+        return coefficients / numpy.linalg.norm(coefficients)

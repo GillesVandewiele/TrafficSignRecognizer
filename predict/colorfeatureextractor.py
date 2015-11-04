@@ -1,4 +1,5 @@
 import colorsys
+from cv2 import fastNlMeansDenoisingColored
 from skimage.feature import hog
 from skimage import color
 from numpy import histogram, asarray
@@ -20,8 +21,8 @@ __author__ = 'Group 16'
 
 
 class ColorFeatureExtractor(Predictor):
-    def extract_hog(self, element):
-        image = resize(color.rgb2gray(imread(element)), (64, 64))
+    def extract_hog(self, image):
+        #image = resize(color.rgb2gray(imread(element)), (64, 64))
         fd = hog(image, orientations=9, pixels_per_cell=(8, 8),
                  cells_per_block=(1, 1), normalise=True)
         return fd.tolist()
@@ -31,10 +32,7 @@ class ColorFeatureExtractor(Predictor):
 
         return [x / sum(hist[0]) for x in hist[0]]
 
-    def extract_hue(self, element, binary=False, debug=False):
-
-        # Read image as array with RGB values
-        img = imread(element)
+    def extract_hue(self, img, binary=False, debug=False):
 
         # Converting the RGB values to HSV values
         hsv = [None] * len(img)
@@ -85,6 +83,6 @@ class ColorFeatureExtractor(Predictor):
                     hue[x][y] = 0
 
         if debug:
-            imsave(element[:-4] + 'test.png', asarray(hue))
+            imsave('test.png', asarray(hue))
 
         return hue

@@ -81,6 +81,6 @@ class ShapeFeatureExtractor():
 
         return [E, T, O, R]
 
-    def extract_zernike(self, element):
-        return mahotas.features.zernike_moments(resize(color.rgb2gray(imread(element)), (96, 96)), radius=96, degree=10)
+    def extract_zernike(self, image, _radius):
+        return mahotas.features.zernike_moments(image, radius=_radius, degree=10)
 

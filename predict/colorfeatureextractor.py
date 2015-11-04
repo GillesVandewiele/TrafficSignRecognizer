@@ -20,8 +20,9 @@ __author__ = 'Group 16'
 
 
 class ColorFeatureExtractor(Predictor):
-    def extract_hog(self, gray_image):
-        image = resize(gray_image, (64, 64))
+    def extract_hog(self, element):
+        #image = resize(color.rgb2gray(imread(element)), (64, 64))
+        image = resize(element, (64, 64))
         fd = hog(image, orientations=9, pixels_per_cell=(8, 8),
                  cells_per_block=(1, 1), normalise=True)
         return fd.tolist()
@@ -31,10 +32,10 @@ class ColorFeatureExtractor(Predictor):
 
         return [x / sum(hist[0]) for x in hist[0]]
 
-    def extract_hue(self, element, binary=False, debug=False):
+    def extract_hue(self, img, binary=False, debug=False):
 
         # Read image as array with RGB values
-        img = imread(element)
+        #img = imread(element)
 
         # Converting the RGB values to HSV values
         hsv = [None] * len(img)

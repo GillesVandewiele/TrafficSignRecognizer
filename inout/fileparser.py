@@ -1,4 +1,3 @@
-from PIL import Image
 import xlsxwriter
 
 __author__ = 'Group16'
@@ -19,10 +18,6 @@ class FileParser:
 
     def __init__(self):
         pass
-
-    @staticmethod
-    def read_image(path):
-        return Image.open(path)
 
     @staticmethod
     def write_CSV(path, predictionObject):

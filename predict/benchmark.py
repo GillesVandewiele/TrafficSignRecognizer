@@ -1,6 +1,4 @@
-import os
 from predict.predictor import Predictor
-from predict.prediction import Prediction
 
 __author__ = 'Group16'
 

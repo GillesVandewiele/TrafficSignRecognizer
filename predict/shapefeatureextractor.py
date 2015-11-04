@@ -1,21 +1,14 @@
 import cv2
 import mahotas
 from pylab import *
-import matplotlib.pyplot as plt
-from skimage import color
-from skimage.morphology import convex_hull_image
-from predict.predictor import Predictor
 
 
 __author__ = 'Group16'
 
 """
-
     This class will extract moments (geometric and Zernike) from the images.
-
     Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
     Commissioned by UGent, course Machine Learning
-
 """
 
 
@@ -81,6 +74,5 @@ class ShapeFeatureExtractor():
 
         return [E, T, O, R]
 
-    def extract_zernike(self, element):
-        return mahotas.features.zernike_moments(resize(color.rgb2gray(imread(element)), (64, 64)), radius=64, degree=10)
-
+    def extract_zernike(self, image, _radius):
+        return mahotas.features.zernike_moments(image, radius=_radius, degree=10)

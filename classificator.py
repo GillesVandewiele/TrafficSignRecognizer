@@ -1,7 +1,9 @@
 import os
-from numpy import append, arange, delete, where
+import cv2
+from numpy import append, arange, delete, where, resize
 import random
 from scipy.stats import rv_discrete
+from skimage import color
 from sklearn.cross_validation import KFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -172,6 +174,13 @@ def get_training_set(nr_samples, training_set, results, seed):
     return [new_train_set, new_validation_set, new_train_results, new_validation_results]
 
 
+def preprocess_image(image, _color=False, size=64):
+    image_array = cv2.imread(image)
+    denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,10,10,7,21)
+    if _color:
+        return resize(denoised_image, (size,size, 3))
+    else:
+        return resize(color.rgb2gray(denoised_image), (size,size))
 
 
 
@@ -183,31 +192,33 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
     shape_extractor = ShapeFeatureExtractor()
     symbol_extractor = SymbolFeatureExtractor()
 
+    counter = 0
     for image in train_set:
 
-        #feature_vector = symbol_extractor.calculateDCT(image)
-
+        print("Training image ", counter)
+        counter+=1
+        preprocessed_color_image = preprocess_image(image, _color=True, size=64)
+        preprocessed_gray_image = preprocess_image(image, _color=False, size=64)
 
         # First, calculate the Zernike moments
-        feature_vector = shape_extractor.extract_zernike(image)
+        feature_vector = shape_extractor.extract_zernike(preprocessed_gray_image, 40)
 
 
         # Then the HOG, our most important feature(s)
         #feature_vector = color_extractor.extract_hog(image)
-        feature_vector = append(feature_vector, color_extractor.extract_hog(image))
+        feature_vector = append(feature_vector, color_extractor.extract_hog(preprocessed_gray_image))
 
         # Then we extract the color features
-        hue = color_extractor.extract_hue(image)
-        feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
+        #hue = color_extractor.extract_hue(preprocessed_color_image)
+        #feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
 
-        # Then we add the shape_features using the hue from the color edxtractor
-        contour = shape_extractor.calculateRimContour(hue)
-        shape_features = shape_extractor.calculateGeometricMoments(contour)
-        feature_vector = append(feature_vector, shape_features)
+        # Then we add the shape_features using the hue from the color extractor
+        #contour = shape_extractor.calculateRimContour(hue)
+        #shape_features = shape_extractor.calculateGeometricMoments(contour)
+        #feature_vector = append(feature_vector, shape_features)
 
         # Finally we append DCT coefficients
-        feature_vector = append(feature_vector,symbol_extractor.calculateDCT(image))
-
+        feature_vector = append(feature_vector,symbol_extractor.calculateDCT(preprocessed_gray_image))
 
         # Append our feature_vector to the feature_vectors
         feature_vectors.append(feature_vector)
@@ -220,83 +231,98 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
     """
     clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
               random_state=1337, shrinking=False, tol=0.0001, verbose=False)
-
     """
+
     # Use Logistic Regression instead of SVM
-    clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=16, intercept_scaling=1,
+    clf = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4, intercept_scaling=1,
                              class_weight=None, random_state=None, solver='liblinear', max_iter=100,
                              multi_class='ovr', verbose=0)
 
     # Logistic Regression for feature selection, higher C = more features will be deleted
-    clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=1)
+    clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
+
+    print(len(feature_vectors), len(feature_vectors[0]))
     new_feature_vectors = clf2.fit_transform(feature_vectors, train_set_results)
+    print(new_feature_vectors.shape)
 
     # Fit the model
     clf.fit(new_feature_vectors, train_set_results)
-    """
+
     train_prediction_object = Prediction()
+    counter=0
     for im in train_set:
 
-        #validation_feature_vector = symbol_extractor.calculateDCT(im)
+        print("predicting training image ", counter)
+        counter+=1
+
+        preprocessed_color_image = preprocess_image(im, _color=True, size=64)
+        preprocessed_gray_image = preprocess_image(im, _color=False, size=64)
+
+        #validation_feature_vector = color_extractor.extract_hog(im)
 
 
         # Calculate Zernike moments
-        validation_feature_vector = shape_extractor.extract_zernike(im)
+        validation_feature_vector = shape_extractor.extract_zernike(preprocessed_gray_image, 40)
 
         #validation_feature_vector = color_extractor.extract_hog(im)
         # Extract validation_feature_vector
-        validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
+        validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(preprocessed_gray_image))
 
         # Extract the same color features as the training phase
-        hue = color_extractor.extract_hue(im)
-        validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+        #hue = color_extractor.extract_hue(preprocessed_color_image)
+        #validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
 
         # And the same shape features
-        contour = shape_extractor.calculateRimContour(hue)
-        shape_features = shape_extractor.calculateGeometricMoments(contour)
-        validation_feature_vector = append(validation_feature_vector, shape_features)
+        #contour = shape_extractor.calculateRimContour(hue)
+        #shape_features = shape_extractor.calculateGeometricMoments(contour)
+        #validation_feature_vector = append(validation_feature_vector, shape_features)
+
 
         # Calculate the DCT coeffs
-        validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
+        validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(preprocessed_gray_image))
 
         #print(clf.predict(validation_feature_vector)[0])
 
         new_validation_feature_vector = clf2.transform(validation_feature_vector)
         train_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
-    """
+
     validation_prediction_object = Prediction()
+    counter=0
     for im in validation_set:
 
-        #validation_feature_vector = symbol_extractor.calculateDCT(im)
+        print("predicting test image ", counter)
+        counter+=1
 
+        preprocessed_color_image = preprocess_image(im, _color=True, size=64)
+        preprocessed_gray_image = preprocess_image(im, _color=False, size=64)
+
+        #validation_feature_vector = color_extractor.extract_hog(im)
 
         # Calculate Zernike moments
-        validation_feature_vector = shape_extractor.extract_zernike(im)
+        validation_feature_vector = shape_extractor.extract_zernike(preprocessed_gray_image, 40)
 
         #validation_feature_vector = color_extractor.extract_hog(im)
         # Extract validation_feature_vector
-        validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(im))
+        validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(preprocessed_gray_image))
 
         # Extract the same color features as the training phase
-        hue = color_extractor.extract_hue(im)
-        validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
+        #hue = color_extractor.extract_hue(preprocessed_color_image)
+        #validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
 
         # And the same shape features
-        contour = shape_extractor.calculateRimContour(hue)
-        shape_features = shape_extractor.calculateGeometricMoments(contour)
-        validation_feature_vector = append(validation_feature_vector, shape_features)
+        #contour = shape_extractor.calculateRimContour(hue)
+        #shape_features = shape_extractor.calculateGeometricMoments(contour)
+        #validation_feature_vector = append(validation_feature_vector, shape_features)
 
         # Calculate the DCT coeffs
-        validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(im))
+        validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(preprocessed_gray_image))
 
         #print(clf.predict(validation_feature_vector)[0])
-
 
         new_validation_feature_vector = clf2.transform(validation_feature_vector)
         validation_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
 
-    #return [validation_prediction_object.evaluate(validation_set_results), train_prediction_object.evaluate(train_set_results)]
-    return [validation_prediction_object.evaluate(validation_set_results),0]
+    return [validation_prediction_object.evaluate(validation_set_results), train_prediction_object.evaluate(train_set_results)]
 
 
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
@@ -308,8 +334,9 @@ results = get_results(train_images_dir)
 all_results = []
 for result in results:
     all_results.append(result)
-""""
-sizes = [256, 256, 512, 1024]
+
+
+sizes = [250]
 
 new_train_set = []
 new_validation_set = []
@@ -332,16 +359,16 @@ for size in sizes:
         results.pop(results.index(new_validation_set_results_temp[i]))
     print("Avg training score using a dataset of size ", len(new_train_set)+len(new_validation_set), " = ", (train_score1+train_score2)/2)
     print("Avg validation score using a dataset of size ", len(new_train_set)+len(new_validation_set), " = ", (validation_score1+validation_score2)/2)
+
+
 """
 # Or use
 print("Calculating the logloss for size: ", len(all_train_images))
-kf = KFold(len(all_train_images), n_folds=2, shuffle=True, random_state=1337)
-# kf = KFold(200, n_folds=2, shuffle=True, random_state=1337)
-# all_train_images = all_train_images[700:900]
-# all_results = all_results[700:900]
-
+kf = KFold(300, n_folds=2, shuffle=True, random_state=1337)
 validation_scores = []
 train_scores = []
+all_train_images = all_train_images[600:900]
+all_results = all_results[600:900]
 for train, validation in kf:
         # Divide the train_images in a training and validation set (using KFold)
         train_set = [all_train_images[i] for i in train]
@@ -353,4 +380,4 @@ for train, validation in kf:
         train_scores.append(train_score)
 print("Avg training score using a dataset of size ", len(all_train_images), " = ", sum(train_scores)/len(train_scores))
 print("Avg validation score using a dataset of size ", len(all_train_images), " = ", sum(validation_scores)/len(validation_scores))
-
+"""

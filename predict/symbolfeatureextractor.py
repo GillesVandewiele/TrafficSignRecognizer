@@ -1,6 +1,4 @@
 import numpy
-import operator
-from skimage.io import imread
 from sklearn import cluster
 from scipy.misc import imresize
 from scipy import fftpack
@@ -31,13 +29,13 @@ class SymbolFeatureExtractor(Predictor):
 
             self.dcts.append([self.calculateDCT(trainingData[element]), results[element]])
 
-    def calculateDCT(self, element):
+    def calculateDCT(self, img):
         clusters = 3
         image_size = 64
         block_size = 64
 
         # Read image in grayscale and convert to workable shape
-        img = imread(element, True)
+        #img = imread(element, True)
         imgArr = img.reshape((-1, 1))
 
         # Apply K-means to image

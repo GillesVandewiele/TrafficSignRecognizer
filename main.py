@@ -33,8 +33,8 @@ def get_images_from_directory(directory):
 
 def preprocess_image(image):
     image_array = cv2.imread(image)
-    #denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,3,3,7,21)
-    return [image_array,color.rgb2gray(image_array)]
+    denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,3,3,7,21)
+    return [denoised_image,color.rgb2gray(denoised_image)]
 
 
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
@@ -55,11 +55,10 @@ for image in train_images:
 
     [color_image,gray_image] = preprocess_image(image)
 
-    feature_vector = color_extractor.extract_hog(gray_image)
-    """
+    #feature_vector = color_extractor.extract_hog(gray_image)
+
     # First, calculate the Zernike moments
     feature_vector = shape_extractor.extract_zernike(gray_image)
-
 
     # Then the HOG, our most important feature(s)
     #feature_vector = color_extractor.extract_hog(image)
@@ -76,7 +75,7 @@ for image in train_images:
 
     # Finally we append DCT coefficients
     feature_vector = append(feature_vector,symbol_extractor.calculateDCT(gray_image))
-    """
+
     # Append our feature_vector to the feature_vectors
     feature_vectors.append(feature_vector)
 
@@ -84,28 +83,29 @@ for image in train_images:
 clf = SVC(C=1.0, cache_size=3000, class_weight=None, kernel='linear', max_iter=-1, probability=True,
                   random_state=None, shrinking=False, tol=0.001, verbose=False)
 """
-clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=16, intercept_scaling=1,
+
+clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1,
                          class_weight=None, random_state=None, solver='liblinear', max_iter=100,
                          multi_class='ovr', verbose=0)
-clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
-                         multi_class='ovr', verbose=0)
 
+"""
 # Logistic Regression for feature selection, higher C = more features will be deleted
 clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
 
 new_feature_vectors = clf2.fit_transform(feature_vectors, results)
-clf.fit(new_feature_vectors, results)
+"""
+clf.fit(feature_vectors, results)
 
 # Testing phase
 prediction_object = Prediction()
 for im in test_images:
     print("Predict: ", im)
 
-    [color_image,gray_image] = preprocess_image(image)
+    [color_image,gray_image] = preprocess_image(im)
 
-    validation_feature_vector = color_extractor.extract_hog(gray_image)
+    #validation_feature_vector = color_extractor.extract_hog(gray_image)
 
-    """
+
     # Calculate Zernike moments
     validation_feature_vector = shape_extractor.extract_zernike(gray_image)
 
@@ -124,10 +124,10 @@ for im in test_images:
 
     # Calculate the DCT coeffs
     validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(gray_image))
-    """
-    new_validation_feature_vector = clf2.transform(validation_feature_vector)
+
+    #new_validation_feature_vector = clf2.transform(validation_feature_vector)
     #print(clf.predict_proba(new_validation_feature_vector)[0])
-    prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
+    prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
 FileParser.write_CSV("submission.xlsx", prediction_object)
 

@@ -176,8 +176,8 @@ def get_training_set(nr_samples, training_set, results, seed):
 
 def preprocess_image(image):
     image_array = cv2.imread(image)
-    denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,3,3,7,21)
-    return color.rgb2gray(denoised_image)
+    #denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,3,3,7,21)
+    return color.rgb2gray(image_array)
 
 
 
@@ -198,9 +198,8 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
         # First, calculate the Zernike moments
         #feature_vector = shape_extractor.extract_zernike(image)
 
-
         # Then the HOG, our most important feature(s)
-        feature_vector = color_extractor.extract_hog(preprocess_image(image))
+        #feature_vector = color_extractor.extract_hog(preprocess_image(image))
         #feature_vector = append(feature_vector, color_extractor.extract_hog(image))
 
         # Then we extract the color features

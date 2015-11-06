@@ -29,6 +29,13 @@ def get_images_from_directory(directory):
 
     return images
 
+
+def preprocess_image(image):
+    image_array = cv2.imread(image)
+    denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,3,3,7,21)
+    return [denoised_image,color.rgb2gray(denoised_image)]
+
+
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
 test_images_dir = os.path.join(os.path.dirname(__file__), "test")
 
@@ -54,17 +61,19 @@ def preprocess_image(image, _color=False, size=64):
 for image in train_images:
     print("Training ", image, "...")
 
-    preprocessed_color_image = preprocess_image(image, _color=True, size=64)
-    preprocessed_gray_image = preprocess_image(image, _color=False, size=64)
+    [color_image,gray_image] = preprocess_image(image)
+
+    #feature_vector = color_extractor.extract_hog(gray_image)
 
     # First, calculate the Zernike moments
-    feature_vector = shape_extractor.extract_zernike(preprocessed_gray_image, 64)
+    feature_vector = shape_extractor.extract_zernike(gray_image)
 
     # Then the HOG, our most important feature(s)
-    feature_vector = append(feature_vector, color_extractor.extract_hog(preprocessed_gray_image))
+    #feature_vector = color_extractor.extract_hog(image)
+    feature_vector = append(feature_vector, color_extractor.extract_hog(gray_image))
 
     # Then we extract the color features
-    hue = color_extractor.extract_hue(preprocessed_color_image)
+    hue = color_extractor.extract_hue(color_image)
     feature_vector = append(feature_vector,color_extractor.calculate_histogram(hue, 20))
 
     # Then we add the shape_features using the hue from the color edxtractor
@@ -73,7 +82,7 @@ for image in train_images:
     feature_vector = append(feature_vector, shape_features)
 
     # Finally we append DCT coefficients
-    feature_vector = append(feature_vector,symbol_extractor.calculateDCT(preprocessed_gray_image))
+    feature_vector = append(feature_vector,symbol_extractor.calculateDCT(gray_image))
 
     # Append our feature_vector to the feature_vectors
     feature_vectors.append(feature_vector)
@@ -97,18 +106,21 @@ prediction_object = Prediction()
 for im in test_images:
     print("Predicting ", im)
 
-    preprocessed_color_image = preprocess_image(im, _color=True, size=64)
-    preprocessed_gray_image = preprocess_image(im, _color=False, size=64)
+    [color_image,gray_image] = preprocess_image(im)
+
+    #validation_feature_vector = color_extractor.extract_hog(gray_image)
+
 
     # Calculate Zernike moments
-    validation_feature_vector = shape_extractor.extract_zernike(preprocessed_gray_image, 64)
 
-    #validation_feature_vector = color_extractor.extract_hog(im)
+    validation_feature_vector = shape_extractor.extract_zernike(gray_image)
+
     # Extract validation_feature_vector
-    validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(preprocessed_gray_image))
+    # validation_feature_vector = color_extractor.extract_hog(im)
+    validation_feature_vector = append(validation_feature_vector, color_extractor.extract_hog(gray_image))
 
     # Extract the same color features as the training phase
-    hue = color_extractor.extract_hue(preprocessed_color_image)
+    hue = color_extractor.extract_hue(color_image)
     validation_feature_vector = append(validation_feature_vector,color_extractor.calculate_histogram(hue, 20))
 
     # And the same shape features
@@ -117,7 +129,7 @@ for im in test_images:
     validation_feature_vector = append(validation_feature_vector, shape_features)
 
     # Calculate the DCT coeffs
-    validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(preprocessed_gray_image))
+    validation_feature_vector = append(validation_feature_vector,symbol_extractor.calculateDCT(gray_image))
 
     new_validation_feature_vector = clf2.transform(validation_feature_vector)
     print(clf.predict_proba(new_validation_feature_vector)[0])

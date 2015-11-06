@@ -22,8 +22,8 @@ test_images_dir = os.path.join(os.path.dirname(__file__), "test")  # Test image 
 image_size = 64  # The size of the preprocessed image
 nr_bins = 20  # Number of bins in the hue color histogram
 radius = 64  # The radius used for calculating Zernike moments
-clusters = 3  # Clusters used for calculating DCT coeffs
-block_size = 64  # Block size for calculating DCT coeffs
+clusters = 3  # Dominant colors used for k-means clustering before DCT
+n_coeff = 1000  # Number of DCT coefficients to include in the feature vector
 pixels_per_cell = 8  # Pixels per cell for HOG vector
 
 

@@ -124,7 +124,7 @@ class TrafficSignRecognizer(object):
                 feature_vector = []
                 for feature_extractor in feature_extractors:
                     feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
-                print(feature_vector[0], feature_vector[10], feature_vector[100])
+                    print(feature_vector[0], feature_vector[10], feature_vector[100])
                 feature_vectors.append(feature_vector)
 
             # Using logistic regression as linear model to fit our feature_vectors to our results

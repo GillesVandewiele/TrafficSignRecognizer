@@ -1,3 +1,4 @@
+import cv2
 from numpy import resize
 from skimage import color
 from skimage.feature import hog
@@ -28,10 +29,9 @@ class HogFeatureExtractor(FeatureExtractor):
         :return: HOG vector
         """
 
-        return self.extract_hog(color.rgb2gray(image), self.pixels_per_cell)
+        return self.extract_hog((resize(color.rgb2gray(cv2.imread(image)), (64,64))), self.pixels_per_cell)
+
 
     def extract_hog(self, image, ppc):
-        image = resize(image, (64, 64))
-        fd = hog(image, orientations=9, pixels_per_cell=(ppc, ppc),
-                 cells_per_block=(1, 1), normalise=True)
+        fd = hog(image, orientations=9, pixels_per_cell=(ppc, ppc), cells_per_block=(1, 1), normalise=True)
         return fd.tolist()

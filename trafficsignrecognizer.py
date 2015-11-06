@@ -46,8 +46,8 @@ class TrafficSignRecognizer(object):
     def preprocess_image(self, image, size):
         # Preprocess our image, creating a denoised color and gray image resized to a square size "size"
         image_array = cv2.imread(image)
-        denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,3,3,7,21)
-        image_array = resize(denoised_image, (size, size, 3))
+        #denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,7,7,11,21)
+        image_array = resize(image_array, (size, size, 3))
         return image_array
 
     def make_submission(self, train_images_path, test_images_path, output_file_path, feature_extractors, size=64):
@@ -115,12 +115,13 @@ class TrafficSignRecognizer(object):
             feature_vectors = []
             counter=1
             for image in train_set:
-                print("Training image ", counter)
+                print("Training image ", image)
                 counter += 1
                 preprocessed_color_image = self.preprocess_image(image, size)
                 feature_vector = []
                 for feature_extractor in feature_extractors:
-                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
+                print(feature_vector[0], feature_vector[10], feature_vector[100])
                 feature_vectors.append(feature_vector)
 
             # Using logistic regression as linear model to fit our feature_vectors to our results

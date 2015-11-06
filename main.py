@@ -29,16 +29,16 @@ pixels_per_cell = 8  # Pixels per cell for HOG vector
 
 ### FEATURE EXTRACTORS ###
 hog_extractor = HogFeatureExtractor(pixels_per_cell)
-color_extractor = ColorFeatureExtractor(nr_bins)
-shape_extractor = ShapeFeatureExtractor(radius)
-symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
-feature_extractors = [hog_extractor, color_extractor, shape_extractor, symbol_extractor]
+#color_extractor = ColorFeatureExtractor(nr_bins)
+#shape_extractor = ShapeFeatureExtractor(radius)
+#symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
+feature_extractors = [hog_extractor]#, color_extractor, shape_extractor, symbol_extractor]
 
 
 tsr = TrafficSignRecognizer()
 #tsr.make_submission(train_images_path=train_images_dir, test_images_path=test_images_dir,
 #                                      output_file_path="test.xlsx", feature_extractors=feature_extractors, size=64)
-print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors))
+print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors, nr_data_augments=2))
 
 
 

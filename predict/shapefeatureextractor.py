@@ -8,7 +8,9 @@ from predict.featureextractor import FeatureExtractor
 __author__ = 'Group16'
 
 """
+
     This class will extract moments (geometric and Zernike) from a hue image.
+
     Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
     Commissioned by UGent, course Machine Learning
 """

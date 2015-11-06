@@ -1,44 +1,32 @@
 import numpy
+from skimage import color
 from sklearn import cluster
 from scipy.misc import imresize
 from scipy import fftpack
-from predict.predictor import Predictor
+from predict.featureextractor import FeatureExtractor
 __author__ = 'Group 16'
 
 """
 
-    This class contains the code to extract DCT coefficients from the images
+    This class contains the code to extract DC coefficients from the images after applying Discrete Cosine Transform
 
     Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
     Commissioned by UGent, course Machine Learning
 
 """
 
-class SymbolFeatureExtractor(Predictor):
-    def __init__(self):
-        self.dcts = []
+class SymbolFeatureExtractor(FeatureExtractor):
+    def __init__(self, _clusters, _image_size, _block_size):
+        self.clusters = _clusters
+        self.image_size = _image_size
+        self.block_size = _block_size
 
-    def train(self, trainingData, results):
-        """
-        Train the data.
-        :param trainingData: The filenames. Should have same length as results and correspond.
-        :param results: The results (string such as D10, D1e, ...). Should have same length as results and correspond.
-        """
+    def extract_feature_vector(self, image):
+        return self.calculateDCT(color.rgb2gray(image), self.clusters, self.image_size, self.block_size)
 
-        self.dcts = []
-
-        for element in range(len(trainingData)):
-            print("Training ", trainingData[element], "...")
-
-            self.dcts.append([self.calculateDCT(trainingData[element]), results[element]])
-
-    def calculateDCT(self, img):
-        clusters = 3
-        image_size = 64
-        block_size = 64
+    def calculateDCT(self, img, clusters, image_size, block_size):
 
         # Read image in grayscale and convert to workable shape
-        #img = imread(element, True)
         imgArr = img.reshape((-1, 1))
 
         # Apply K-means to image
@@ -57,7 +45,7 @@ class SymbolFeatureExtractor(Predictor):
         newImg.shape = img.shape
 
         # Resize image for DCT
-        newImg = imresize(newImg, (image_size, image_size)).astype(float)
+        newImg = newImg.astype(float)
 
         coefficients = []
         for i in range(int(image_size/block_size)):

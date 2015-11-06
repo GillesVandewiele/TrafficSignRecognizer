@@ -1,4 +1,4 @@
-from predict.predictor import Predictor
+from predict.featureextractor import FeatureExtractor
 
 __author__ = 'Group16'
 
@@ -13,7 +13,7 @@ __author__ = 'Group16'
 
 """
 
-class BenchmarkPredictor(Predictor):
+class BenchmarkPredictor(FeatureExtractor):
 
     def __init__(self):
         self.occurrenceProbabilities = {}

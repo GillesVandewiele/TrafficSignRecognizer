@@ -1,14 +1,13 @@
 import colorsys
-from skimage.feature import hog
 from numpy import histogram, asarray, resize
 from skimage.io import imsave
-from predict.predictor import Predictor
+from predict.featureextractor import FeatureExtractor
 
 __author__ = 'Group 16'
 
 """
 
-    This class contains a predictor that uses colour information. It can extract a hue image from an image and
+    This class contains an extractor that extracts colour information. It converts a hue image from a color image and
     calculate a histogram of these values.
 
     Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
@@ -17,19 +16,27 @@ __author__ = 'Group 16'
 """
 
 
-class ColorFeatureExtractor(Predictor):
-    def extract_hog(self, element):
-        image = resize(element, (64, 64))
-        fd = hog(image, orientations=9, pixels_per_cell=(8, 8),
-                 cells_per_block=(1, 1), normalise=True)
-        return fd.tolist()
+class ColorFeatureExtractor(FeatureExtractor):
+
+    def __init__(self, _bins):
+        self.bins = _bins
+
+    def extract_feature_vector(self, image):
+        """
+        Extract a hue color histogram from image
+        :param image: a COLOR image
+        :return: a histogram of the HUE image which is converted from the input COLOR image
+        """
+        hue = ColorFeatureExtractor.extract_hue(image)
+        return self.calculate_histogram(hue, self.bins)
 
     def calculate_histogram(self, hue, bins=20):
         hist = histogram(hue, bins=bins, range=(0, 1))
 
         return [x / sum(hist[0]) for x in hist[0]]
 
-    def extract_hue(self, img, binary=False, debug=False):
+    @staticmethod
+    def extract_hue(img, binary=False, debug=False):
 
         # Converting the RGB values to HSV values
         hsv = [None] * len(img)

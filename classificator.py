@@ -176,8 +176,8 @@ def get_training_set(nr_samples, training_set, results, seed):
 
 def preprocess_image(image):
     image_array = cv2.imread(image)
-    #denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,3,3,7,21)
-    return color.rgb2gray(image_array)
+    denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,7,7,11,21)
+    return color.rgb2gray(denoised_image)
 
 
 
@@ -199,7 +199,7 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
         #feature_vector = shape_extractor.extract_zernike(image)
 
         # Then the HOG, our most important feature(s)
-        #feature_vector = color_extractor.extract_hog(preprocess_image(image))
+        feature_vector = color_extractor.extract_hog(preprocess_image(image))
         #feature_vector = append(feature_vector, color_extractor.extract_hog(image))
 
         # Then we extract the color features
@@ -351,6 +351,9 @@ for size in sizes:
 # Or use
 print("Calculating the logloss for size: ", len(all_train_images))
 kf = KFold(len(train_images), n_folds=2, shuffle=True, random_state=1337)
+# kf = KFold(600, n_folds=2, shuffle=True, random_state=1337)
+# all_train_images = all_train_images[600:1200]
+# all_results = all_results[600:1200]
 validation_scores = []
 train_scores = []
 # all_train_images = all_train_images[600:900]

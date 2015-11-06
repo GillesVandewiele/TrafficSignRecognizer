@@ -1,0 +1,45 @@
+import os
+from predict.colorfeatureextractor import ColorFeatureExtractor
+from predict.hogfeatureextractor import HogFeatureExtractor
+from predict.shapefeatureextractor import ShapeFeatureExtractor
+from predict.symbolfeatureextractor import SymbolFeatureExtractor
+from trafficsignrecognizer import TrafficSignRecognizer
+
+__author__ = 'Group16'
+
+"""
+
+    Python script using our Traffic Sign Recognizer
+
+    Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
+    Commissioned by UGent, course Machine Learning
+
+"""
+
+### VARIABLES ###
+train_images_dir = os.path.join(os.path.dirname(__file__), "train")  # Train image directory
+test_images_dir = os.path.join(os.path.dirname(__file__), "test")  # Test image directory
+image_size = 64  # The size of the preprocessed image
+nr_bins = 20  # Number of bins in the hue color histogram
+radius = 64  # The radius used for calculating Zernike moments
+clusters = 3  # Clusters used for calculating DCT coeffs
+block_size = 64  # Block size for calculating DCT coeffs
+pixels_per_cell = 8  # Pixels per cell for HOG vector
+
+
+### FEATURE EXTRACTORS ###
+hog_extractor = HogFeatureExtractor(pixels_per_cell)
+color_extractor = ColorFeatureExtractor(nr_bins)
+shape_extractor = ShapeFeatureExtractor(radius)
+symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
+feature_extractors = [hog_extractor, color_extractor, shape_extractor, symbol_extractor]
+
+
+tsr = TrafficSignRecognizer()
+#tsr.make_submission(train_images_path=train_images_dir, test_images_path=test_images_dir,
+#                                      output_file_path="test.xlsx", feature_extractors=feature_extractors, size=64)
+print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors))
+
+
+
+

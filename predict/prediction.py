@@ -4,7 +4,7 @@ __author__ = 'Group16'
 
 """
 
-    This is the object for prediction data
+    This is the object for prediction data, used for writing to an excel file
 
     Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
     Commissioned by UGent, course Machine Learning

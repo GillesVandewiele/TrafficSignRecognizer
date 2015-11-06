@@ -118,12 +118,13 @@ class TrafficSignRecognizer(object):
             feature_vectors = []
             counter=1
             for image in train_set:
-                print("Training image ", counter)
+                print("Training image ", image)
                 counter += 1
                 preprocessed_color_image = self.preprocess_image(image, size)
                 feature_vector = []
                 for feature_extractor in feature_extractors:
-                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
+                print(feature_vector[0], feature_vector[10], feature_vector[100])
                 feature_vectors.append(feature_vector)
 
             # Using logistic regression as linear model to fit our feature_vectors to our results

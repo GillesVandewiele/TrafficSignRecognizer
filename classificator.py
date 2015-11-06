@@ -176,8 +176,8 @@ def get_training_set(nr_samples, training_set, results, seed):
 
 def preprocess_image(image):
     image_array = cv2.imread(image)
-    denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,7,7,11,21)
-    return color.rgb2gray(denoised_image)
+    #denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,7,7,11,21)
+    return color.rgb2gray(image_array)
 
 
 
@@ -200,6 +200,7 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
 
         # Then the HOG, our most important feature(s)
         feature_vector = color_extractor.extract_hog(preprocess_image(image))
+        print(feature_vector[0],feature_vector[10],feature_vector[100])
         #feature_vector = append(feature_vector, color_extractor.extract_hog(image))
 
         # Then we extract the color features
@@ -235,7 +236,7 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
 
 
     # Logistic Regression for feature selection, higher C = more features will be deleted
-    clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=0.5)
+    clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=1)
 
     #Print feature vector length
     print(len(feature_vectors), len(feature_vectors[0]))
@@ -244,7 +245,7 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
 
     # Fit the model
     clf.fit(new_feature_vectors, train_set_results)
-    """
+
     train_prediction_object = Prediction()
     counter=0
     for im in train_set:
@@ -275,7 +276,7 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
 
         new_validation_feature_vector = clf2.transform(validation_feature_vector)
         train_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
-    """
+
     validation_prediction_object = Prediction()
     counter=0
     for im in validation_set:
@@ -307,8 +308,8 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
         new_validation_feature_vector = clf2.transform(validation_feature_vector)
         validation_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
 
-    return [validation_prediction_object.evaluate(validation_set_results),0]
-    #return [validation_prediction_object.evaluate(validation_set_results), train_prediction_object.evaluate(train_set_results)]
+    #return [validation_prediction_object.evaluate(validation_set_results),0]
+    return [validation_prediction_object.evaluate(validation_set_results), train_prediction_object.evaluate(train_set_results)]
 
 
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")
@@ -360,10 +361,10 @@ train_scores = []
 # all_results = all_results[600:900]
 for train, validation in kf:
         # Divide the train_images in a training and validation set (using KFold)
-        train_set = [all_train_images[i] for i in train]
-        validation_set = [all_train_images[i] for i in validation]
-        train_set_results = [all_results[i] for i in train]
-        validation_set_results = [all_results[i] for i in validation]
+        train_set = [all_train_images[i%len(train_images)] for i in train]
+        validation_set = [all_train_images[i%len(train_images)] for i in validation]
+        train_set_results = [all_results[i%len(train_images)] for i in train]
+        validation_set_results = [all_results[i%len(train_images)] for i in validation]
         validation_score, train_score = classify_traffic_signs(train_set, validation_set, train_set_results, validation_set_results)
         validation_scores.append(validation_score)
         train_scores.append(train_score)

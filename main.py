@@ -38,7 +38,7 @@ feature_extractors = [hog_extractor]#, color_extractor, shape_extractor, symbol_
 tsr = TrafficSignRecognizer()
 #tsr.make_submission(train_images_path=train_images_dir, test_images_path=test_images_dir,
 #                                      output_file_path="test.xlsx", feature_extractors=feature_extractors, size=64)
-print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors, nr_data_augments=2))
+print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors, nr_data_augments=1))
 
 
 

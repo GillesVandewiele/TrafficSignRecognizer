@@ -27,6 +27,7 @@ class HogFeatureExtractor(FeatureExtractor):
         :param image: GRAY image
         :return: HOG vector
         """
+
         return self.extract_hog(color.rgb2gray(image), self.pixels_per_cell)
 
     def extract_hog(self, image, ppc):

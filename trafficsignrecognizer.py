@@ -70,8 +70,9 @@ class TrafficSignRecognizer(object):
             feature_vectors.append(feature_vector)
 
         # Using logistic regression as linear model to fit our feature_vectors to our results
-        clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
-                         multi_class='ovr', verbose=0)
+        clf = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4, intercept_scaling=1,
+                             class_weight=None, random_state=None, solver='liblinear', max_iter=100,
+                             multi_class='ovr', verbose=0)
 
         # Logistic Regression for feature selection, higher C = more features will be deleted
         clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
@@ -103,10 +104,10 @@ class TrafficSignRecognizer(object):
         train_images = self.get_images_from_directory(train_images_path)
         results = self.get_results(train_images_path)
 
-        #kf = KFold(len(train_images)*nr_data_augments, n_folds=k, shuffle=True, random_state=1337)
-        kf = KFold(1024, n_folds=k, shuffle=True, random_state=1337)
-        train_images = train_images[100:1124]
-        results = results[100:1124]
+        kf = KFold(len(train_images)*nr_data_augments, n_folds=k, shuffle=True, random_state=1337)
+        # kf = KFold(500, n_folds=k, shuffle=True, random_state=1337)
+        # train_images = train_images[400:900]
+        # results = results[400:900]
         train_errors = []
         test_errors = []
 
@@ -117,8 +118,8 @@ class TrafficSignRecognizer(object):
             train_set_results = [results[i%len(train_images)] for i in train]
             validation_set_results = [results[i%len(train_images)] for i in validation]
 
-            print(validation_set)
-            print(validation_set_results)
+            # print(validation_set)
+            # print(validation_set_results)
 
             # Create a vector of feature vectors (a feature matrix)
             feature_vectors = []
@@ -137,13 +138,13 @@ class TrafficSignRecognizer(object):
                              multi_class='ovr', verbose=0)
 
             # Logistic Regression for feature selection, lower C = more features will be deleted
-            clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=1)
+            #clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=1)
 
             # Feature selection/reduction
-            new_feature_vectors = clf2.fit_transform(feature_vectors, train_set_results)
+            #new_feature_vectors = clf2.fit_transform(feature_vectors, train_set_results)
 
             # Model fitting
-            clf.fit(new_feature_vectors, train_set_results)
+            clf.fit(feature_vectors, train_set_results)
 
             train_prediction_object = Prediction()
             counter=0
@@ -155,21 +156,22 @@ class TrafficSignRecognizer(object):
                 for feature_extractor in feature_extractors:
                     validation_feature_vector = append(validation_feature_vector,
                                                        feature_extractor.extract_feature_vector(preprocessed_color_image))
-                new_validation_feature_vector = clf2.transform(validation_feature_vector)
-                train_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
+                #new_validation_feature_vector = clf2.transform(validation_feature_vector)
+                train_prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
             test_prediction_object = Prediction()
             counter=0
             for im in validation_set:
-                print("predicting test image ", counter)
+                print("predicting test image ", im)
                 counter+=1
                 preprocessed_color_image = self.preprocess_image(im, size)
                 validation_feature_vector = []
                 for feature_extractor in feature_extractors:
                     validation_feature_vector = append(validation_feature_vector,
                                                        feature_extractor.extract_feature_vector(preprocessed_color_image))
-                new_validation_feature_vector = clf2.transform(validation_feature_vector)
-                test_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
+                #new_validation_feature_vector = clf2.transform(validation_feature_vector)
+                print(clf.predict_proba(validation_feature_vector)[0])
+                test_prediction_object.addPrediction(clf.predict_proba(validation_feature_vector)[0])
 
             train_errors.append(train_prediction_object.evaluate(train_set_results))
             test_errors.append(test_prediction_object.evaluate(validation_set_results))

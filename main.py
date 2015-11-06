@@ -22,14 +22,14 @@ radius = 64  # The radius used for calculating Zernike moments
 clusters = 3  # Dominant colors used for k-means clustering before DCT
 n_coeff = 1000  # Number of DCT coefficients to include in the feature vector
 pixels_per_cell = 8  # Pixels per cell for HOG vector
-
+block_size = 64 # Image size
 
 ### FEATURE EXTRACTORS ###
 hog_extractor = HogFeatureExtractor(pixels_per_cell)
-#color_extractor = ColorFeatureExtractor(nr_bins)
-#shape_extractor = ShapeFeatureExtractor(radius)
-#symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
-feature_extractors = [hog_extractor]#, color_extractor, shape_extractor, symbol_extractor]
+color_extractor = ColorFeatureExtractor(nr_bins)
+shape_extractor = ShapeFeatureExtractor(radius)
+symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
+feature_extractors = [hog_extractor, color_extractor, shape_extractor, symbol_extractor]
 
 
 tsr = TrafficSignRecognizer()

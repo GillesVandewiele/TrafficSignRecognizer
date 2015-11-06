@@ -29,7 +29,7 @@ class HogFeatureExtractor(FeatureExtractor):
         :return: HOG vector
         """
 
-        img = resize(color.rgb2gray(cv2.imread(image)), (64, 64))
+        img = color.rgb2gray(image)
         return self.extract_hog(img, self.pixels_per_cell)
 
     def extract_hog(self, image, ppc):

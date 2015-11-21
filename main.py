@@ -38,24 +38,20 @@ number_of_descriptors = 250
 
 
 hog_extractor = HogFeatureExtractor(pixels_per_cell)
-"""
 color_extractor = ColorFeatureExtractor(nr_bins)
 shape_extractor = ShapeFeatureExtractor(radius)
 symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
-"""
-
-train_images = get_images_from_directory(train_images_dir)
 sift_extractor = SiftFeatureExtractor()
-#feature_extractors = [hog_extractor]#, color_extractor, shape_extractor, symbol_extractor]
-feature_extractors = [sift_extractor]#,hog_extractor]
+
+feature_extractors = [hog_extractor, color_extractor, shape_extractor, symbol_extractor, sift_extractor]
 
 
 tsr = TrafficSignRecognizer()
-#tsr.make_submission(train_images_path=train_images_dir, test_images_path=test_images_dir,
-#                                      output_file_path="test.xlsx", feature_extractors=feature_extractors, size=64)
+tsr.make_submission(train_images_path=train_images_dir, test_images_path=test_images_dir,
+                                      output_file_path="test.xlsx", feature_extractors=feature_extractors, size=64)
 
-print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors,
-                     k=2, nr_data_augments=1, size=64))
+#print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors,
+#                     k=2, nr_data_augments=1, size=64))
 
 
 

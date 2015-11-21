@@ -9,11 +9,10 @@ import scipy
 from skimage import color
 
 
-def process_image(image, resultname, params="--edge-thresh 5 --peak-thresh 20"):
+def process_image(image, resultname, params="--edge-thresh 10 --peak-thresh 5"):
     """ process an image and save the results in a file"""
     # create a pgm file
-    img = color.rgb2gray(image)
-    imsave('tmp.png',img)
+    imsave('tmp.png',image)
     im = Image.open("tmp.png").convert('L')
     im.save('tmp.pgm')
     imagename = 'tmp.pgm'

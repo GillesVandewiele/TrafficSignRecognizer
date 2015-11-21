@@ -105,12 +105,12 @@ class TrafficSignRecognizer(object):
     def local_test(self, train_images_path, feature_extractors, k=2, nr_data_augments=1, size=64):
         # Extract the train images with corresponding results
         train_images = self.get_images_from_directory(train_images_path)
-        train_images = train_images[600:1100]
+        #train_images = train_images[600:1100]
         results = self.get_results(train_images_path)
-        results = results[600:1100]
+        #results = results[600:1100]
 
-        #kf = KFold(len(train_images)*nr_data_augments, n_folds=k, shuffle=True, random_state=1337)
-        kf = KFold(500, n_folds=k, shuffle=True, random_state=1337)
+        kf = KFold(len(train_images)*nr_data_augments, n_folds=k, shuffle=True, random_state=1337)
+        #kf = KFold(500, n_folds=k, shuffle=True, random_state=1337)
         train_errors = []
         test_errors = []
 
@@ -124,10 +124,10 @@ class TrafficSignRecognizer(object):
             # Create a vector of feature vectors (a feature matrix)
             feature_vectors = []
             counter=1
-            sift_extractor = temp_extractor = next(extractor for extractor in feature_extractors if type(extractor) == SiftFeatureExtractor)
-            sift_extractor.set_codebook(train_set)
-            print(feature_extractors.index(temp_extractor))
-            feature_extractors[feature_extractors.index(temp_extractor)] = sift_extractor
+            sift_extractor = temp_extractor = next((extractor for extractor in feature_extractors if type(extractor) == SiftFeatureExtractor), None)
+            if(sift_extractor != None):
+                sift_extractor.set_codebook(train_set)
+                feature_extractors[feature_extractors.index(temp_extractor)] = sift_extractor
             for image in train_set:
                 print("Training image ", image)
                 counter += 1
@@ -176,7 +176,7 @@ class TrafficSignRecognizer(object):
                     if type(feature_extractor) != SiftFeatureExtractor:
                         validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
                     else:
-                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(image))
+                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(im))
                 new_validation_feature_vector = clf2.transform(validation_feature_vector)
                 train_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
 
@@ -191,7 +191,7 @@ class TrafficSignRecognizer(object):
                     if type(feature_extractor) != SiftFeatureExtractor:
                         validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
                     else:
-                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(image))
+                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(im))
                 new_validation_feature_vector = clf2.transform(validation_feature_vector)
                 test_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
 

@@ -45,8 +45,9 @@ class SiftFeatureExtractor(FeatureExtractor):
         for i, fname in enumerate(input_files):
             print("calculating sift features for", fname)
             if type(fname) == str:
+                #print("test")
                 image_array = cv2.imread(fname)
-                image_array = resize(image_array, (64, 64, 3))
+                #image_array = resize(image_array, (64, 64, 3))
             else:
                 image_array = fname;
             process_image(image_array, 'tmp.sift')

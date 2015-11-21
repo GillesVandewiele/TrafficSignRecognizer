@@ -3,12 +3,16 @@ import cv2
 from numpy import append
 from skimage.transform import resize
 from skimage import color
+from sklearn import preprocessing
 from sklearn.cross_validation import KFold
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression, LassoCV, Lasso
+from sklearn.preprocessing import StandardScaler
 from inout.fileparser import FileParser
 from predict.colorfeatureextractor import ColorFeatureExtractor
 from predict.prediction import Prediction
 from predict.shapefeatureextractor import ShapeFeatureExtractor
+from predict.siftfeatureextractor import SiftFeatureExtractor
 from predict.symbolfeatureextractor import SymbolFeatureExtractor
 
 __author__ = 'Group16'
@@ -71,6 +75,8 @@ class TrafficSignRecognizer(object):
         clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
                          multi_class='ovr', verbose=0)
 
+        #clf = RandomForestClassifier(n_estimators=2500)
+
         # Logistic Regression for feature selection, higher C = more features will be deleted
         clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
 
@@ -102,6 +108,7 @@ class TrafficSignRecognizer(object):
         results = self.get_results(train_images_path)
 
         kf = KFold(len(train_images)*nr_data_augments, n_folds=k, shuffle=True, random_state=1337)
+        #kf = KFold(500, n_folds=k, shuffle=True, random_state=1337)
         train_errors = []
         test_errors = []
 
@@ -121,19 +128,31 @@ class TrafficSignRecognizer(object):
                 preprocessed_color_image = self.preprocess_image(image, size)
                 feature_vector = []
                 for feature_extractor in feature_extractors:
-                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                        feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
                 feature_vectors.append(feature_vector)
 
             # Using logistic regression as linear model to fit our feature_vectors to our results
             clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
                              multi_class='ovr', verbose=0)
 
+            #clf = RandomForestClassifier(n_estimators=100)
+
             # Logistic Regression for feature selection, higher C = more features will be deleted
             clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
+            """
+            reduction = Lasso()
+            scaler = StandardScaler()
+            X = scaler.fit_transform(feature_vectors)
+            le = preprocessing.LabelEncoder()
+            le.fit(train_set_results)
+            reduction.fit(X, le.transform(train_set_results))
+            print(reduction.coef_)
+            """
 
             # Feature selection/reduction
             new_feature_vectors = clf2.fit_transform(feature_vectors, train_set_results)
 
+            #clf.coef_ = reduction.coef_
             # Model fitting
             clf.fit(new_feature_vectors, train_set_results)
 
@@ -145,8 +164,10 @@ class TrafficSignRecognizer(object):
                 preprocessed_color_image = self.preprocess_image(im, size)
                 validation_feature_vector = []
                 for feature_extractor in feature_extractors:
-                    validation_feature_vector = append(validation_feature_vector,
-                                                       feature_extractor.extract_feature_vector(preprocessed_color_image))
+                    if type(feature_extractor) != SiftFeatureExtractor:
+                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                    else:
+                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(image))
                 new_validation_feature_vector = clf2.transform(validation_feature_vector)
                 train_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
 
@@ -158,8 +179,10 @@ class TrafficSignRecognizer(object):
                 preprocessed_color_image = self.preprocess_image(im, size)
                 validation_feature_vector = []
                 for feature_extractor in feature_extractors:
-                    validation_feature_vector = append(validation_feature_vector,
-                                                       feature_extractor.extract_feature_vector(preprocessed_color_image))
+                    if type(feature_extractor) != SiftFeatureExtractor:
+                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                    else:
+                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(image))
                 new_validation_feature_vector = clf2.transform(validation_feature_vector)
                 test_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
 

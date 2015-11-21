@@ -2,6 +2,7 @@ import os
 from predict.colorfeatureextractor import ColorFeatureExtractor
 from predict.hogfeatureextractor import HogFeatureExtractor
 from predict.shapefeatureextractor import ShapeFeatureExtractor
+from predict.siftfeatureextractor import SiftFeatureExtractor
 from predict.symbolfeatureextractor import SymbolFeatureExtractor
 from trafficsignrecognizer import TrafficSignRecognizer
 
@@ -12,6 +13,14 @@ __author__ = 'Group16'
     Written by Group 16: Tim Deweert, Karsten Goossens & Gilles Vandewiele
     Commissioned by UGent, course Machine Learning
 """
+def get_images_from_directory(directory):
+    # Get all files from a directory
+    images = []
+    for root, subFolders, files in os.walk(directory):
+        for file in files:
+            images.append(os.path.join(root, file))
+
+    return images
 
 ### VARIABLES ###
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")  # Train image directory
@@ -23,13 +32,19 @@ clusters = 3  # Dominant colors used for k-means clustering before DCT
 n_coeff = 1000  # Number of DCT coefficients to include in the feature vector
 pixels_per_cell = 8  # Pixels per cell for HOG vector
 block_size = 64 # Image size
+number_of_descriptors = 250
 
 ### FEATURE EXTRACTORS ###
+
+"""
 hog_extractor = HogFeatureExtractor(pixels_per_cell)
 color_extractor = ColorFeatureExtractor(nr_bins)
 shape_extractor = ShapeFeatureExtractor(radius)
 symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
-feature_extractors = [hog_extractor, color_extractor, shape_extractor, symbol_extractor]
+"""
+sift_extractor = SiftFeatureExtractor(get_images_from_directory(train_images_dir))
+#feature_extractors = [hog_extractor]#, color_extractor, shape_extractor, symbol_extractor]
+feature_extractors = [sift_extractor]
 
 
 tsr = TrafficSignRecognizer()

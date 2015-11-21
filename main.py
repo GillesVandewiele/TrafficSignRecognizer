@@ -47,7 +47,7 @@ symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
 train_images = get_images_from_directory(train_images_dir)
 sift_extractor = SiftFeatureExtractor()
 #feature_extractors = [hog_extractor]#, color_extractor, shape_extractor, symbol_extractor]
-feature_extractors = [sift_extractor,hog_extractor]
+feature_extractors = [sift_extractor]#,hog_extractor]
 
 
 tsr = TrafficSignRecognizer()

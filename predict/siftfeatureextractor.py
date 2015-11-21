@@ -23,9 +23,11 @@ __author__ = 'Group 16'
 
 class SiftFeatureExtractor(FeatureExtractor):
 
-    def __init__(self, train_images):
+    def __init__(self):
         self.PRE_ALLOCATION_BUFFER = 1000  # for sift
         self.K_THRESH = 1.0
+
+    def set_codebook(self, train_images):
         self.codebook = self.get_code_book(train_images)
 
     def extract_feature_vector(self, image):

@@ -124,6 +124,10 @@ class TrafficSignRecognizer(object):
             # Create a vector of feature vectors (a feature matrix)
             feature_vectors = []
             counter=1
+            sift_extractor = temp_extractor = next(extractor for extractor in feature_extractors if type(extractor) == SiftFeatureExtractor)
+            sift_extractor.set_codebook(train_set)
+            print(feature_extractors.index(temp_extractor))
+            feature_extractors[feature_extractors.index(temp_extractor)] = sift_extractor
             for image in train_set:
                 print("Training image ", image)
                 counter += 1

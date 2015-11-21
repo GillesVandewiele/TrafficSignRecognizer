@@ -36,15 +36,18 @@ number_of_descriptors = 250
 
 ### FEATURE EXTRACTORS ###
 
-"""
+
 hog_extractor = HogFeatureExtractor(pixels_per_cell)
+"""
 color_extractor = ColorFeatureExtractor(nr_bins)
 shape_extractor = ShapeFeatureExtractor(radius)
 symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
 """
-sift_extractor = SiftFeatureExtractor(get_images_from_directory(train_images_dir))
+
+train_images = get_images_from_directory(train_images_dir)
+sift_extractor = SiftFeatureExtractor(train_images[600:1100])
 #feature_extractors = [hog_extractor]#, color_extractor, shape_extractor, symbol_extractor]
-feature_extractors = [sift_extractor]
+feature_extractors = [sift_extractor,hog_extractor]
 
 
 tsr = TrafficSignRecognizer()

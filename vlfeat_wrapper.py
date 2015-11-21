@@ -6,14 +6,17 @@ import math
 import os
 import numpy
 import scipy
+from skimage import color
 
-def process_image(imagename, resultname, params="--edge-thresh 10 --peak-thresh 5"):
+
+def process_image(image, resultname, params="--edge-thresh 5 --peak-thresh 20"):
     """ process an image and save the results in a file"""
-    if imagename[-3:] != 'pgm':
-        # create a pgm file
-        im = Image.open(imagename).convert('L')
-        im.save('tmp.pgm')
-        imagename = 'tmp.pgm'
+    # create a pgm file
+    img = color.rgb2gray(image)
+    imsave('tmp.png',img)
+    im = Image.open("tmp.png").convert('L')
+    im.save('tmp.pgm')
+    imagename = 'tmp.pgm'
 
     cmmd = str("vlfeat-0.9.20\\bin\\win32\\sift.exe " + imagename + " --output=" + resultname +
                " " + params)
@@ -24,9 +27,9 @@ def process_image(imagename, resultname, params="--edge-thresh 10 --peak-thresh 
 def read_features_from_file(filename):
     """ read feature properties and return in matrix form"""
     f = loadtxt(filename)
-    if(len(f.shape) < 2):
-        f = numpy.array([f])
     if(len(f) > 0):
+        if(len(f.shape) < 2):
+            f = numpy.array([f])
         return f[:, :4], f[:, 4:]  # feature locations, descriptors
     else:
         return numpy.array([numpy.array([0 for i in range(4)])]), numpy.array([numpy.array([0 for i in range(128)])])

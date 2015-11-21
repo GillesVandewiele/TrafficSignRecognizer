@@ -105,10 +105,12 @@ class TrafficSignRecognizer(object):
     def local_test(self, train_images_path, feature_extractors, k=2, nr_data_augments=1, size=64):
         # Extract the train images with corresponding results
         train_images = self.get_images_from_directory(train_images_path)
+        train_images = train_images[600:1100]
         results = self.get_results(train_images_path)
+        results = results[600:1100]
 
-        kf = KFold(len(train_images)*nr_data_augments, n_folds=k, shuffle=True, random_state=1337)
-        #kf = KFold(500, n_folds=k, shuffle=True, random_state=1337)
+        #kf = KFold(len(train_images)*nr_data_augments, n_folds=k, shuffle=True, random_state=1337)
+        kf = KFold(500, n_folds=k, shuffle=True, random_state=1337)
         train_errors = []
         test_errors = []
 
@@ -128,6 +130,9 @@ class TrafficSignRecognizer(object):
                 preprocessed_color_image = self.preprocess_image(image, size)
                 feature_vector = []
                 for feature_extractor in feature_extractors:
+                    if type(feature_extractor) != SiftFeatureExtractor:
+                        feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                    else:
                         feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
                 feature_vectors.append(feature_vector)
 

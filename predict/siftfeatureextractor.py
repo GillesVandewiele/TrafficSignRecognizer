@@ -1,4 +1,5 @@
 from math import sqrt
+import cv2
 from numpy import zeros_like, vstack, resize, zeros, histogram
 from scipy.cluster import vq
 from predict.featureextractor import FeatureExtractor
@@ -24,13 +25,13 @@ class SiftFeatureExtractor(FeatureExtractor):
 
     def __init__(self, train_images):
         self.PRE_ALLOCATION_BUFFER = 1000  # for sift
-        self.K_THRESH = 0.1
+        self.K_THRESH = 1.0
         self.codebook = self.get_code_book(train_images)
 
     def extract_feature_vector(self, image):
-        return self.computeHistograms(self.codebook, image)
+        return self.computeHistograms(self.codebook, self.dict2numpy(self.extractSift([image])))
 
-    def computeHistograms(codebook, descriptors):
+    def computeHistograms(self, codebook, descriptors):
         code, dist = vq.vq(descriptors, codebook)
         histogram_of_words, bin_edges = histogram(code,
                                                   bins=range(codebook.shape[0] + 1),
@@ -41,7 +42,12 @@ class SiftFeatureExtractor(FeatureExtractor):
         all_features_dict = {}
         for i, fname in enumerate(input_files):
             print("calculating sift features for", fname)
-            process_image(fname, 'tmp.sift')
+            if type(fname) == str:
+                image_array = cv2.imread(fname)
+                image_array = resize(image_array, (64, 64, 3))
+            else:
+                image_array = fname;
+            process_image(image_array, 'tmp.sift')
             locs, descriptors = read_features_from_file('tmp.sift')
             all_features_dict[fname] = descriptors
         return all_features_dict

@@ -31,6 +31,7 @@ def dict2numpy(dict):
             array = vstack((array, padding))
         array[pivot:pivot + nelements] = value
         pivot += nelements
+    print(array)
     array = resize(array, (pivot, 128))
     return array
 
@@ -52,7 +53,7 @@ def get_images_from_directory(directory):
 
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")  # Train image directory
 train_images = get_images_from_directory(train_images_dir)
-train_images = train_images[700:725]
+train_images = train_images[500:1000]
 
 features = extractSift(train_images)
 all_features_array = dict2numpy(features)

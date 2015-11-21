@@ -1,6 +1,6 @@
 import os
 import cv2
-from numpy import append, arange, delete, where, resize
+from numpy import append, arange, delete, where, resize, expand_dims
 import random
 from scipy.stats import rv_discrete
 from skimage import color
@@ -196,6 +196,15 @@ def classify_traffic_signs(train_set,validation_set, train_set_results, validati
         counter+=1
         color_image = preprocess_image(image)
         gray_image = color.rgb2gray(color_image)
+        test_image = expand_dims(gray_image, axis=0)
+        # print(type(test_image))
+        # print(test_image.shape)
+        # print(test_image)
+        print(type(train_set_results))
+        print(len(train_set_results))
+        print(train_set_results)
+
+
         # First, calculate the Zernike moments
         feature_vector = shape_extractor.extract_zernike(gray_image)
 
@@ -329,7 +338,7 @@ for result in results:
     all_results.append(result)
 
 print(len(train_images))
-sizes = [512]
+sizes = [2048]
 
 new_train_set = []
 new_validation_set = []

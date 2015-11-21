@@ -63,12 +63,19 @@ class TrafficSignRecognizer(object):
 
         # Create a vector of feature vectors (a feature matrix)
         feature_vectors = []
+        sift_extractor = temp_extractor = next((extractor for extractor in feature_extractors if type(extractor) == SiftFeatureExtractor), None)
+        if(sift_extractor != None):
+            sift_extractor.set_codebook(train_images)
+            feature_extractors[feature_extractors.index(temp_extractor)] = sift_extractor
         for image in train_images:
             print("Training ", image, "...")
             preprocessed_color_image = self.preprocess_image(image, size)
             feature_vector = []
             for feature_extractor in feature_extractors:
-                feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                if type(feature_extractor) != SiftFeatureExtractor:
+                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                else:
+                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
             feature_vectors.append(feature_vector)
 
         # Using logistic regression as linear model to fit our feature_vectors to our results
@@ -93,8 +100,10 @@ class TrafficSignRecognizer(object):
             preprocessed_color_image = self.preprocess_image(im, size)
             validation_feature_vector = []
             for feature_extractor in feature_extractors:
-                validation_feature_vector = append(validation_feature_vector,
-                                                   feature_extractor.extract_feature_vector(preprocessed_color_image))
+                if type(feature_extractor) != SiftFeatureExtractor:
+                    validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                else:
+                    validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(im))
             new_validation_feature_vector = clf2.transform(validation_feature_vector)
             prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
 

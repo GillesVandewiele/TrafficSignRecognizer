@@ -85,17 +85,17 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
             excerpt = slice(start_idx, start_idx + batchsize)
         yield inputs[excerpt], targets[excerpt]
  
-def main(num_epochs=2000):
+def main(num_epochs=100):
     # Load the dataset
     print("Loading data...")
     # X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
  
     train_images_dir = os.path.join(os.path.dirname(__file__), "train")
-    test_images_dir = os.path.join(os.path.dirname(__file__), "test")
+    test_images_dir = os.path.join(os.path.dirname(__file__), "test_labeled")
     train_images = get_images_from_directory(train_images_dir)
     test_images = get_images_from_directory(test_images_dir)
     train_results = get_results(train_images_dir)
-    #test_results = get_results(test_images_dir)
+    test_results = get_results(test_images_dir)
     cfe = HogFeatureExtractor(8)
    
     all_train_images = []
@@ -107,7 +107,7 @@ def main(num_epochs=2000):
         all_test_images.append(np.asarray([preprocess_image(image, cfe)]))
 
     X_test = np.asarray(all_test_images)
-    #y_test = np.asarray(test_results)
+    y_test = np.asarray(test_results)
 
     X_train = np.asarray(all_train_images)
     y_train = np.asarray(train_results)
@@ -151,7 +151,7 @@ def main(num_epochs=2000):
     # Compile a second function computing the validation loss and accuracy:
     val_fn = theano.function([input_var, target_var], [test_loss, test_acc])
 
-    pred_fn = theano.function([input_var], test_prediction)
+    pred_fn = theano.function([input_var,], test_prediction)
 
     # Finally, launch the training loop.
     print("Starting training...")
@@ -174,13 +174,14 @@ def main(num_epochs=2000):
         print(test_images[index])
         print(pred_fn([X_test[index]])[0])
         prediction_object.addPrediction(pred_fn([X_test[index]])[0])
+        print(val_fn([X_test[index]], [y_test[index]]))
 
     FileParser.write_CSV("submission.xlsx",prediction_object)
-    #err, acc = val_fn(X_test, y_test)
+    err, acc = val_fn(X_test, y_test)
 
     print("Final results:")
-    #print("  test loss: ", err)
-    #print("  test accuracy: ", acc * 100)
+    print("  test loss: ", err)
+    print("  test accuracy: ", acc * 100)
  
         # Optionally, you could now dump the network weights to a file like this:
         # np.savez('model.npz', *lasagne.layers.get_all_param_values(network))

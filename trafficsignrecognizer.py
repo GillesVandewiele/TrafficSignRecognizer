@@ -111,11 +111,15 @@ class TrafficSignRecognizer(object):
         FileParser.write_CSV(output_file_path, prediction_object)
 
 
-    def local_test(self, train_images_path, feature_extractors, k=2, nr_data_augments=1, size=64):
+    def local_test(self, train_images_path, feature_extractors, k=2, nr_data_augments=1, size=64, times=1):
         # Extract the train images with corresponding results
         train_images = self.get_images_from_directory(train_images_path)
         #train_images = train_images[600:1100]
         results = self.get_results(train_images_path)
+        for i in range(1,times):
+            train_images = train_images + train_images
+            results = results + results
+
         #results = results[600:1100]
 
         kf = KFold(len(train_images)*nr_data_augments, n_folds=k, shuffle=True, random_state=1337)
@@ -130,6 +134,7 @@ class TrafficSignRecognizer(object):
             train_set_results = [results[i%len(train_images)] for i in train]
             validation_set_results = [results[i%len(train_images)] for i in validation]
 
+            print("Training images")
             # Create a vector of feature vectors (a feature matrix)
             feature_vectors = []
             counter=1
@@ -149,11 +154,12 @@ class TrafficSignRecognizer(object):
                         feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
                 feature_vectors.append(feature_vector)
 
+            print("fitting model")
             # Using logistic regression as linear model to fit our feature_vectors to our results
-            clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
-                             multi_class='ovr', verbose=0)
+            #clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
+            #                 multi_class='ovr', verbose=0)
 
-            #clf = RandomForestClassifier(n_estimators=100)
+            clf = RandomForestClassifier(n_estimators=100,max_features="log2",max_depth=15)
 
             # Logistic Regression for feature selection, higher C = more features will be deleted
             clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
@@ -174,6 +180,7 @@ class TrafficSignRecognizer(object):
             # Model fitting
             clf.fit(new_feature_vectors, train_set_results)
 
+            print("predicting train images")
             train_prediction_object = Prediction()
             counter=0
             for im in train_set:
@@ -189,6 +196,7 @@ class TrafficSignRecognizer(object):
                 new_validation_feature_vector = clf2.transform(validation_feature_vector)
                 train_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
 
+            print("predicting test images")
             test_prediction_object = Prediction()
             counter=0
             for im in validation_set:

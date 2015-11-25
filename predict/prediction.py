@@ -1,4 +1,5 @@
 import math
+import operator
 
 __author__ = 'Group16'
 
@@ -142,6 +143,10 @@ class Prediction(object):
             if not all(key in Prediction.TRAFFIC_SIGNS for key in prediction):
                 raise PredictionException("Mismatching keys", prediction)
 
+        yx = zip(self.TRAFFIC_SIGNS, prediction)
+        print(list(yx))
+
+        #print(temp_dict.values())
         self.predictions.append(prediction)
 
 
@@ -166,6 +171,22 @@ class Prediction(object):
         logloss /= -len(self.predictions)
 
         return logloss
+
+    def evaluate_binary(self, results):
+        """
+            Evaluate the logloss score
+            :param results: array with the same length as :var predictions with the corresponding result as a string
+            :return: the logloss score
+        """
+        correct = 0
+        counter = 0
+        for prediction in self.predictions:
+            if prediction == results[counter]:
+                correct += 1
+            counter += 1
+
+
+        return correct/counter
 
     def evaluate_binary(self, results):
         """

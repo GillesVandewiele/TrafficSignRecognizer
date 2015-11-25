@@ -1,27 +1,21 @@
 import os
+from random import shuffle
+
 import cv2
-import sys
-import time
+import lasagne
+from lasagne.updates import nesterov_momentum
+from nolearn.lasagne import NeuralNet
 import numpy as np
-import random
-from pylab import *
-from scipy.stats import rv_discrete
-from skimage import color
+from numpy.ma import append
 from skimage.transform import resize
+from lasagne import layers
 from sklearn.cross_validation import KFold
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
 from inout.fileparser import FileParser
-from predict.benchmark import BenchmarkPredictor
-from predict.colorfeatureextractor import ColorFeatureExtractor
+
 from predict.hogfeatureextractor import HogFeatureExtractor
 from predict.prediction import Prediction
-from predict.shapefeatureextractor import ShapeFeatureExtractor
-from predict.symbolfeatureextractor import SymbolFeatureExtractor
-import lasagne
-import theano
-import theano.tensor as T
-
+from predict.siftfeatureextractor import SiftFeatureExtractor
 
 
 def get_results(train_images_dir):
@@ -34,7 +28,7 @@ def get_results(train_images_dir):
                 dir = [signDirectory]*len(os.listdir(os.path.join(train_images_dir, shapesDirectory, signDirectory)))
                 for el in dir:
                     results.append(pred.TRAFFIC_SIGNS.index(el))
- 
+
         return results
  
 def get_images_from_directory(directory):
@@ -47,148 +41,173 @@ def get_images_from_directory(directory):
     return images
  
  
-def preprocess_image(image, extractor):
+def preprocess_image(image):
     image_array = cv2.imread(image)
-    im = resize(image_array, (64, 64, 3))
-    return extractor.extract_feature_vector(im)
+    im = resize(image_array, (128, 128, 3))
+    return im
  
  
  
-def build_mlp(input_var=None):
- 
-    # Input layer, specifying the expected input shape of the network
-    # (unspecified batchsize, 1 channel, 28 rows and 28 columns) and
-    # linking it to the given Theano variable `input_var`, if any:
-    l_in = lasagne.layers.InputLayer(shape=(None, 1, 576),
-                                     input_var=input_var)
-    # Another 800-unit layer:
-    l_hid = lasagne.layers.DenseLayer(
-            l_in, num_units=100,
-            nonlinearity=None)
- 
-    # Finally, we'll add the fully-connected output layer, of 10 softmax units:
-    l_out = lasagne.layers.DenseLayer(
-            l_hid, num_units=81,
-            nonlinearity=lasagne.nonlinearities.softmax)
- 
-    return l_out
- 
-def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
-    assert len(inputs) == len(targets)
-    if shuffle:
-        indices = np.arange(len(inputs))
-        np.random.shuffle(indices)
-    for start_idx in range(0, len(inputs) - batchsize + 1, batchsize):
-        if shuffle:
-            excerpt = indices[start_idx:start_idx + batchsize]
-        else:
-            excerpt = slice(start_idx, start_idx + batchsize)
-        yield inputs[excerpt], targets[excerpt]
- 
+def build_mlp(nr_features):
+    net1 = NeuralNet(
+        layers=[  # three layers: one hidden layer
+            ('input', layers.InputLayer),
+            ('hidden', layers.DenseLayer),
+            ('hidden2', layers.DenseLayer),
+            ('output', layers.DenseLayer),
+            ],
+        # layer parameters:
+        input_shape=(None, nr_features),  # 96x96 input pixels per batch
+        hidden_num_units=175,  # number of units in hidden layer
+        hidden2_num_units=125,  # number of units in hidden layer
+        output_nonlinearity=lasagne.nonlinearities.softmax,  # output layer uses identity function
+        output_num_units=81,  # 30 target values
+
+        # optimization method:
+        update=nesterov_momentum,
+        update_learning_rate=0.01,
+        update_momentum=0.9,
+
+        max_epochs=500,  # we want to train this many epochs
+        verbose=1,
+    )
+    return net1
+
 def main(num_epochs=100):
     # Load the dataset
     print("Loading data...")
-    # X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
  
     train_images_dir = os.path.join(os.path.dirname(__file__), "train")
-    test_images_dir = os.path.join(os.path.dirname(__file__), "test_labeled")
+    test_images_dir = os.path.join(os.path.dirname(__file__), "test")
     train_images = get_images_from_directory(train_images_dir)
-    test_images = get_images_from_directory(test_images_dir)
+    #test_images = get_images_from_directory(test_images_dir)
     train_results = get_results(train_images_dir)
-    test_results = get_results(test_images_dir)
-    cfe = HogFeatureExtractor(8)
-   
+    #test_results = get_results(test_images_dir)
+
+    """
+    train_images = train_images[200:700]
+    test_images = test_images[200:700]
+    train_results = train_results[200:700]
+    test_results = test_results[200:700]
+    """
+
+    """
     all_train_images = []
     for image in train_images:
-        all_train_images.append(np.asarray([preprocess_image(image,cfe)]))
-
+        all_train_images.append(np.asarray(preprocess_image(image,cfe)))
+    """
+    """
     all_test_images = []
     for image in test_images:
-        all_test_images.append(np.asarray([preprocess_image(image, cfe)]))
+        all_test_images.append(np.asarray(preprocess_image(image, cfe)))
 
-    X_test = np.asarray(all_test_images)
-    y_test = np.asarray(test_results)
+
+    #X_test = np.asarray(all_test_images)
+    #y_test = np.asarray(test_results)
+
 
     X_train = np.asarray(all_train_images)
     y_train = np.asarray(train_results)
+    """
 
-    input_var = T.tensor3('inputs')
-    target_var = T.ivector('targets')
+    kf = KFold(len(train_images), n_folds=2, shuffle=True, random_state=13337)
+
+    for train, validation in kf:
+        # Divide the train_images in a training and validation set (using KFold)
+        training_images = np.asarray([train_images[i%len(train_images)] for i in train])
+        validating_images = np.asarray([train_images[i%len(train_images)] for i in validation])
+        y_train = np.asarray([train_results[i%len(train_images)] for i in train])
+        y_val = np.asarray([train_results[i%len(train_images)] for i in validation])
+
+        cfe = HogFeatureExtractor(8)
+        #sift_extractor = SiftFeatureExtractor()
+        #sift_extractor.set_codebook(train_images)
+
+        feature_extractors = [cfe]#, sift_extractor]
+        feature_vectors = []
+        for image in training_images:
+            print("Extracting features from training image ", image, "...")
+            preprocessed_color_image = preprocess_image(image)
+            feature_vector = []
+            for feature_extractor in feature_extractors:
+                if type(feature_extractor) != SiftFeatureExtractor:
+                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                else:
+                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
+            feature_vectors.append(feature_vector)
+
+        print("Feature reduction")
+        print("From shape: ", len(feature_vectors), len(feature_vectors[0]))
+        clf = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=0.1)
+
+        # Feature selection/reduction
+        new_feature_vectors = clf.fit_transform(feature_vectors, y_train)
+        print("To shape:", len(new_feature_vectors), len(new_feature_vectors[0]))
+        X_train = np.asarray(new_feature_vectors)
+
+        print("Building model")
+        network = build_mlp(nr_features = len(new_feature_vectors[0]))
+        print("Fitting")
+        network.fit(X_train, y_train)
+
+        print("Predicting")
+        prediction_object = Prediction()
+        for image in validating_images:
+            print("Extracting features from validating image ", image, "...")
+            preprocessed_color_image = preprocess_image(image)
+            validation_feature_vector = []
+            for feature_extractor in feature_extractors:
+                if type(feature_extractor) != SiftFeatureExtractor:
+                    validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                else:
+                    validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(image))
+
+            new_validation_feature_vector = clf.transform(validation_feature_vector)
+            prediction_object.addPrediction(network.predict_proba(new_validation_feature_vector)[0])
+        """
+        for prediction in range(len(predictions)):
+            print("--------------------")
+            print(prediction_object.TRAFFIC_SIGNS[y_val[prediction]], y_val[prediction])
+            print("--------------------")
+            prediction_object.addPrediction(predictions[prediction])
+        """
+
+        print("Logloss score = ", prediction_object.evaluate(y_val))
+
+    """
+    # Shuffle the data (because batches are used under the hood of NeuralNet) #TODO: do this??
+    X_train_shuf = []
+    y_train_shuf = []
+    print(len(X_train))
+    index_shuf = list(range(len(X_train)))
+    shuffle(index_shuf)
+    for i in index_shuf:
+        X_train_shuf.append(X_train[i])
+        y_train_shuf.append(y_train[i])
+
+    X_train = np.asarray(X_train_shuf)
+    y_train = np.asarray(y_train_shuf)
+
+    X_train = X_train[:len(X_train)/2]
+    y_train = X_train = X_train[:len(X_train)/2]
+
+    X_test = X_train[len(X_train)/2:]
 
     # Create neural network model (depending on first command line parameter)
-    print("Building model and compiling functions...")
-    network = build_mlp(input_var)
+    print("Building model")
+    network = build_mlp()
 
-    # Create a loss expression for training, i.e., a scalar objective we want
-    # to minimize (for our multi-class problem, it is the cross-entropy loss):
-    prediction = lasagne.layers.get_output(network)
-    loss = lasagne.objectives.categorical_crossentropy(prediction, target_var)
-    loss = loss.mean()
-    # We could add some weight decay as well here, see lasagne.regularization.
+    print("Fitting")
+    network.fit(X_train, y_train)
 
-    # Create update expressions for training, i.e., how to modify the
-    # parameters at each training step. Here, we'll use Stochastic Gradient
-    # Descent (SGD) with Nesterov momentum, but Lasagne offers plenty more.
-    params = lasagne.layers.get_all_params(network, trainable=True)
-    updates = lasagne.updates.nesterov_momentum(
-            loss, params, learning_rate=0.01, momentum=0.9)
-
-    # Create a loss expression for validation/testing. The crucial difference
-    # here is that we do a deterministic forward pass through the network,
-    # disabling dropout layers.
-    test_prediction = lasagne.layers.get_output(network, deterministic=True)
-    test_loss = lasagne.objectives.categorical_crossentropy(test_prediction,
-                                                            target_var)
-    test_loss = test_loss.mean()
-    # As a bonus, also create an expression for the classification accuracy:
-    test_acc = T.mean(T.eq(T.argmax(test_prediction, axis=1), target_var),
-                      dtype=theano.config.floatX)
-
-    # Compile a function performing a training step on a mini-batch (by giving
-    # the updates dictionary) and returning the corresponding training loss:
-    train_fn = theano.function([input_var, target_var], loss, updates=updates)
-
-    # Compile a second function computing the validation loss and accuracy:
-    val_fn = theano.function([input_var, target_var], [test_loss, test_acc])
-
-    pred_fn = theano.function([input_var,], test_prediction)
-
-    # Finally, launch the training loop.
-    print("Starting training...")
-    # We iterate over epochs:
-
+    print("Predicting")
+    predictions = network.predict_proba(X_test)
     prediction_object = Prediction()
+    for prediction in len(range(predictions)):
+        print(X_test[prediction])
+        prediction_object.addPrediction(prediction)
 
-    for epoch in range(num_epochs):
-        # In each epoch, we do a full pass over the training data:
-        start_time = time.time()
-        train_err = train_fn(X_train, y_train)
-
-        # Then we print the results for this epoch:
-        print("Epoch {} of {} took {:.3f}s".format(
-            epoch + 1, num_epochs, time.time() - start_time))
-        print("  training loss: ", train_err)
-
-    # After training, we compute and print the test error:
-    for index in range(len(X_test)):
-        print(test_images[index])
-        print(pred_fn([X_test[index]])[0])
-        prediction_object.addPrediction(pred_fn([X_test[index]])[0])
-        print(val_fn([X_test[index]], [y_test[index]]))
-
-    FileParser.write_CSV("submission.xlsx",prediction_object)
-    err, acc = val_fn(X_test, y_test)
-
-    print("Final results:")
-    print("  test loss: ", err)
-    print("  test accuracy: ", acc * 100)
- 
-        # Optionally, you could now dump the network weights to a file like this:
-        # np.savez('model.npz', *lasagne.layers.get_all_param_values(network))
-        #
-        # And load them again later on like this:
-        # with np.load('model.npz') as f:
-        #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
-        # lasagne.layers.set_all_param_values(network, param_values)
- 
+    FileParser.write_CSV("submission.xlsx", prediction_object)
+    #print("Logloss score = ", prediction_object.evaluate(test_results))
+    """
 main()

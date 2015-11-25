@@ -95,7 +95,7 @@ def main(num_epochs=2000):
     train_images = get_images_from_directory(train_images_dir)
     test_images = get_images_from_directory(test_images_dir)
     train_results = get_results(train_images_dir)
-    #test_results = get_results(test_images_dir)
+    test_results = get_results(test_images_dir)
     cfe = HogFeatureExtractor(8)
    
     all_train_images = []
@@ -107,7 +107,7 @@ def main(num_epochs=2000):
         all_test_images.append(np.asarray([preprocess_image(image, cfe)]))
 
     X_test = np.asarray(all_test_images)
-    #y_test = np.asarray(test_results)
+    y_test = np.asarray(test_results)
 
     X_train = np.asarray(all_train_images)
     y_train = np.asarray(train_results)

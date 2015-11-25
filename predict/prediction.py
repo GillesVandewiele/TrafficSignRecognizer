@@ -142,6 +142,7 @@ class Prediction(object):
             if not all(key in Prediction.TRAFFIC_SIGNS for key in prediction):
                 raise PredictionException("Mismatching keys", prediction)
 
+        print(prediction)
         self.predictions.append(prediction)
 
 

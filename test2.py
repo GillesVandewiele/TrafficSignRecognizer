@@ -171,8 +171,8 @@ def main(num_epochs=2000):
 
     # After training, we compute and print the test error:
     for index in range(len(X_test)):
-        print(test_images[index])
-        print(pred_fn([X_test[index]])[0])
+        #print(test_images[index])
+        #print(pred_fn([X_test[index]])[0])
         prediction_object.addPrediction(pred_fn([X_test[index]])[0])
 
     FileParser.write_CSV("submission.xlsx",prediction_object)

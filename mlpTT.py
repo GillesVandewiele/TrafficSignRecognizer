@@ -64,7 +64,7 @@ def build_mlp(nr_features):
         input_shape=(None, nr_features),  # 96x96 input pixels per batch
         hidden_num_units=300,  # number of units in hidden layer
         hidden2_num_units=250,  # number of units in hidden layer
-        hidden2_num_units=200,  # number of units in hidden layer
+        hidden3_num_units=200,  # number of units in hidden layer
         output_nonlinearity=lasagne.nonlinearities.softmax,  # output layer uses identity function
         output_num_units=81,  # 30 target values
 
@@ -88,7 +88,6 @@ def main(num_epochs=100):
     test_images = get_images_from_directory(test_images_dir)
     train_results = get_results(train_images_dir)
     test_results = get_results(test_images_dir)
-
     print("Loaded: ", len(train_images), " train images with ", len(train_results), " corresponding results and ",
           len(test_images), " with ", len(test_results), " corresponding results.")
 

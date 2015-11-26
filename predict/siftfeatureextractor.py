@@ -1,6 +1,6 @@
 from math import sqrt
 import cv2
-from numpy import zeros_like, vstack, resize, zeros, histogram
+from numpy import zeros_like, vstack, resize, zeros, histogram, asarray
 from scipy.cluster import vq
 from predict.featureextractor import FeatureExtractor
 from vlfeat_wrapper import process_image, read_features_from_file
@@ -31,7 +31,7 @@ class SiftFeatureExtractor(FeatureExtractor):
         self.codebook = self.get_code_book(train_images)
 
     def extract_feature_vector(self, image):
-        return self.computeHistograms(self.codebook, self.dict2numpy(self.extractSift([image])))
+        return self.computeHistograms(self.codebook, asarray(self.extractSift([image])))
 
     def computeHistograms(self, codebook, descriptors):
         code, dist = vq.vq(descriptors, codebook)
@@ -41,7 +41,7 @@ class SiftFeatureExtractor(FeatureExtractor):
         return histogram_of_words
 
     def extractSift(self, input_files):
-        all_features_dict = {}
+        all_words = []
         for i, fname in enumerate(input_files):
             print("calculating sift features for", fname)
             if type(fname) == str:
@@ -52,8 +52,9 @@ class SiftFeatureExtractor(FeatureExtractor):
                 image_array = fname;
             process_image(image_array, 'tmp.sift')
             locs, descriptors = read_features_from_file('tmp.sift')
-            all_features_dict[fname] = descriptors
-        return all_features_dict
+            for descriptor in descriptors:
+                all_words.append(asarray(descriptor))
+        return all_words
 
     def dict2numpy(self, dict):
         nkeys = len(dict)
@@ -72,7 +73,9 @@ class SiftFeatureExtractor(FeatureExtractor):
 
     def get_code_book(self, train_images):
         features = self.extractSift(train_images)
-        all_features_array = self.dict2numpy(features)
+        print(len(features), len(features[0]))
+        all_features_array = asarray(features)
+        print(all_features_array.shape)
         nfeatures = all_features_array.shape[0]
         nclusters = int(sqrt(nfeatures))
         codebook, distortion = vq.kmeans(all_features_array,

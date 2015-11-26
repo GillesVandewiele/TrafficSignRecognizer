@@ -45,13 +45,15 @@ def preprocess_image(image):
     image_array = cv2.imread(image)
     im = resize(image_array, (64, 64, 3))
     return im
+
+def rotateImage(image, angle):
+    return cv2.resize(image, (64, 64))
  
  
  
 def build_mlp(nr_features):
     net1 = NeuralNet(
-
-        layers=[  # four layers: two hidden layers
+        layers=[  # three layers: one hidden layer
             ('input', layers.InputLayer),
             ('hidden', layers.DenseLayer),
             ('hidden2', layers.DenseLayer),
@@ -60,18 +62,18 @@ def build_mlp(nr_features):
             ],
         # layer parameters:
         input_shape=(None, nr_features),  # 96x96 input pixels per batch
-        hidden_num_units=1152,  # number of units in hidden layer
-        hidden2_num_units=576,  # number of units in hidden layer
-        hidden3_num_units=288,
+        hidden_num_units=300,  # number of units in hidden layer
+        hidden2_num_units=250,  # number of units in hidden layer
+        hidden2_num_units=200,  # number of units in hidden layer
         output_nonlinearity=lasagne.nonlinearities.softmax,  # output layer uses identity function
         output_num_units=81,  # 30 target values
 
         # optimization method:
         update=nesterov_momentum,
-        update_learning_rate=0.005,
+        update_learning_rate=0.01,
         update_momentum=0.9,
 
-        max_epochs=300,  # we want to train this many epochs
+        max_epochs=100,  # we want to train this many epochs
         verbose=1,
     )
     return net1
@@ -81,11 +83,64 @@ def main(num_epochs=100):
     print("Loading data...")
  
     train_images_dir = os.path.join(os.path.dirname(__file__), "train")
-    test_images_dir = os.path.join(os.path.dirname(__file__), "test")
+    test_images_dir = os.path.join(os.path.dirname(__file__), "test_labeled")
     train_images = get_images_from_directory(train_images_dir)
-    #test_images = get_images_from_directory(test_images_dir)
+    test_images = get_images_from_directory(test_images_dir)
     train_results = get_results(train_images_dir)
-    #test_results = get_results(test_images_dir)
+    test_results = get_results(test_images_dir)
+
+    print("Loaded: ", len(train_images), " train images with ", len(train_results), " corresponding results and ",
+          len(test_images), " with ", len(test_results), " corresponding results.")
+
+    cfe = HogFeatureExtractor(8)
+    sift_extractor = SiftFeatureExtractor()
+    sift_extractor.set_codebook(train_images)
+
+    feature_extractors = [cfe, sift_extractor]
+
+    feature_vectors = []
+    for image in train_images:
+        print("Extracting features from training image ", image, "...")
+        preprocessed_color_image = preprocess_image(image)
+        feature_vector = []
+        for feature_extractor in feature_extractors:
+            if type(feature_extractor) != SiftFeatureExtractor:
+                feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+            else:
+                feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
+        feature_vectors.append(feature_vector)
+
+    print("Feature reduction")
+    print("From shape: ", len(feature_vectors), len(feature_vectors[0]))
+    clf = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=0.1)
+
+    # Feature selection/reduction
+    new_feature_vectors = clf.fit_transform(feature_vectors, train_results)
+    print("To shape:", len(new_feature_vectors), len(new_feature_vectors[0]))
+    X_train = np.asarray(new_feature_vectors)
+    y_train = np.asarray(train_results)
+
+    print("Building model")
+    network = build_mlp(nr_features=len(new_feature_vectors[0]))
+    print("Fitting")
+    network.fit(X_train, y_train)
+
+    print("Predicting")
+    prediction_object = Prediction()
+    for image in test_images:
+        print("Extracting features from validating image ", image, "...")
+        preprocessed_color_image = preprocess_image(image)
+        validation_feature_vector = []
+        for feature_extractor in feature_extractors:
+            if type(feature_extractor) != SiftFeatureExtractor:
+                validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+            else:
+                validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(image))
+
+        new_validation_feature_vector = clf.transform(validation_feature_vector)
+        prediction_object.addPrediction(network.predict_proba(new_validation_feature_vector)[0])
+
+    print("Logloss score = ", prediction_object.evaluate(test_results))
 
     """
     train_images = train_images[200:700]
@@ -112,7 +167,7 @@ def main(num_epochs=100):
     X_train = np.asarray(all_train_images)
     y_train = np.asarray(train_results)
     """
-
+    """
     kf = KFold(len(train_images), n_folds=2, shuffle=True, random_state=13337)
 
     for train, validation in kf:
@@ -124,7 +179,7 @@ def main(num_epochs=100):
 
         cfe = HogFeatureExtractor(8)
         #sift_extractor = SiftFeatureExtractor()
-        #sift_extractor.set_codebook(train_images)
+        #sift_extractor.set_codebook(training_images)
 
         feature_extractors = [cfe]#, sift_extractor]
         feature_vectors = []
@@ -167,50 +222,13 @@ def main(num_epochs=100):
 
             new_validation_feature_vector = clf.transform(validation_feature_vector)
             prediction_object.addPrediction(network.predict_proba(new_validation_feature_vector)[0])
-        """
         for prediction in range(len(predictions)):
             print("--------------------")
             print(prediction_object.TRAFFIC_SIGNS[y_val[prediction]], y_val[prediction])
             print("--------------------")
             prediction_object.addPrediction(predictions[prediction])
+
+        #print("Logloss score = ", prediction_object.evaluate(y_val))
         """
 
-        print("Logloss score = ", prediction_object.evaluate(y_val))
-
-    """
-    # Shuffle the data (because batches are used under the hood of NeuralNet) #TODO: do this??
-    X_train_shuf = []
-    y_train_shuf = []
-    print(len(X_train))
-    index_shuf = list(range(len(X_train)))
-    shuffle(index_shuf)
-    for i in index_shuf:
-        X_train_shuf.append(X_train[i])
-        y_train_shuf.append(y_train[i])
-
-    X_train = np.asarray(X_train_shuf)
-    y_train = np.asarray(y_train_shuf)
-
-    X_train = X_train[:len(X_train)/2]
-    y_train = X_train = X_train[:len(X_train)/2]
-
-    X_test = X_train[len(X_train)/2:]
-
-    # Create neural network model (depending on first command line parameter)
-    print("Building model")
-    network = build_mlp()
-
-    print("Fitting")
-    network.fit(X_train, y_train)
-
-    print("Predicting")
-    predictions = network.predict_proba(X_test)
-    prediction_object = Prediction()
-    for prediction in len(range(predictions)):
-        print(X_test[prediction])
-        prediction_object.addPrediction(prediction)
-
-    FileParser.write_CSV("submission.xlsx", prediction_object)
-    #print("Logloss score = ", prediction_object.evaluate(test_results))
-    """
 main()

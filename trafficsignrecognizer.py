@@ -1,8 +1,8 @@
 import os
 import cv2
-from numpy import append
-from skimage.transform import resize
-from skimage import color
+from numpy import append, random
+from skimage.transform import resize, rotate
+from skimage import transform
 from sklearn import preprocessing
 from sklearn.cross_validation import KFold
 from sklearn.ensemble import RandomForestClassifier
@@ -51,9 +51,16 @@ class TrafficSignRecognizer(object):
     def preprocess_image(self, image, size):
         # Preprocess our image, creating a denoised color and gray image resized to a square size "size"
         image_array = cv2.imread(image)
-        #denoised_image = cv2.fastNlMeansDenoisingColored(image_array,None,7,7,11,21)
-        image_array = resize(image_array, (size, size, 3))
-        return image_array
+        # cv2.imshow("Image",image_array)
+        # cv2.waitKey(0)
+
+        # rotated = rotate(image_array,5)
+        img = resize(image_array, (size, size, 3))
+        # cv2.imshow("Image",img)
+        # cv2.waitKey(0)
+        #denoised_image = cv2.fastNlMeansDenoisingColored(img,None,7,7,11,21)
+
+        return img
 
     def make_submission(self, train_images_path, test_images_path, output_file_path, feature_extractors, size=64):
         # Extract the train images with corresponding results & the test images
@@ -156,10 +163,10 @@ class TrafficSignRecognizer(object):
 
             print("fitting model")
             # Using logistic regression as linear model to fit our feature_vectors to our results
-            #clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
-            #                 multi_class='ovr', verbose=0)
+            clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
+                             multi_class='ovr', verbose=0)
 
-            clf = RandomForestClassifier(n_estimators=100,max_features="log2",max_depth=15)
+            #clf = RandomForestClassifier(n_estimators=100,max_features="log2",max_depth=15)
 
             # Logistic Regression for feature selection, higher C = more features will be deleted
             clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)

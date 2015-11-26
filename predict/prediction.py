@@ -144,8 +144,8 @@ class Prediction(object):
                 raise PredictionException("Mismatching keys", prediction)
 
 
-        yx = zip(self.TRAFFIC_SIGNS, prediction)
-        print(list(yx))
+        #yx = zip(self.TRAFFIC_SIGNS, prediction)
+        #print(list(yx))
 
         #print(temp_dict.values())
         self.predictions.append(prediction)

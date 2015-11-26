@@ -63,12 +63,18 @@ def build_mlp(input_var=None):
                                      input_var=input_var)
     # Another 800-unit layer:
     l_hid = lasagne.layers.DenseLayer(
-            l_in, num_units=100,
+            l_in, num_units=1152,
+            nonlinearity=None)
+    l_hid2 = lasagne.layers.DenseLayer(
+            l_hid, num_units=576,
+            nonlinearity=None)
+    l_hid3 = lasagne.layers.DenseLayer(
+            l_hid2, num_units=288,
             nonlinearity=None)
  
     # Finally, we'll add the fully-connected output layer, of 10 softmax units:
     l_out = lasagne.layers.DenseLayer(
-            l_hid, num_units=81,
+            l_hid3, num_units=81,
             nonlinearity=lasagne.nonlinearities.softmax)
  
     return l_out
@@ -85,13 +91,13 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
             excerpt = slice(start_idx, start_idx + batchsize)
         yield inputs[excerpt], targets[excerpt]
  
-def main(num_epochs=2000):
+def main(num_epochs=1000):
     # Load the dataset
     print("Loading data...")
     # X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
  
     train_images_dir = os.path.join(os.path.dirname(__file__), "train")
-    test_images_dir = os.path.join(os.path.dirname(__file__), "test")
+    test_images_dir = os.path.join(os.path.dirname(__file__), "test_labeled")
     train_images = get_images_from_directory(train_images_dir)
     test_images = get_images_from_directory(test_images_dir)
     train_results = get_results(train_images_dir)
@@ -170,17 +176,18 @@ def main(num_epochs=2000):
         print("  training loss: ", train_err)
 
     # After training, we compute and print the test error:
-    for index in range(len(X_test)):
-        #print(test_images[index])
-        #print(pred_fn([X_test[index]])[0])
-        prediction_object.addPrediction(pred_fn([X_test[index]])[0])
+    # for index in range(len(X_test)):
+    #     #print(test_images[index])
+    #     #print(pred_fn([X_test[index]])[0])
+    #     prediction_object.addPrediction(pred_fn(X_test[index],y_test[index]))
 
-    FileParser.write_CSV("submission.xlsx",prediction_object)
-    #err, acc = val_fn(X_test, y_test)
+    #pred_fn(X_test,y_test)
+    #FileParser.write_CSV("submission.xlsx",prediction_object)
+    err, acc = val_fn(X_test, y_test)
 
     print("Final results:")
-    #print("  test loss: ", err)
-    #print("  test accuracy: ", acc * 100)
+    print("  test loss: ", err)
+    print("  test accuracy: ", acc * 100)
  
         # Optionally, you could now dump the network weights to a file like this:
         # np.savez('model.npz', *lasagne.layers.get_all_param_values(network))

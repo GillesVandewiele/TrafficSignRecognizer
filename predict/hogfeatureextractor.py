@@ -3,6 +3,8 @@ from skimage import color
 from skimage.transform import resize
 from skimage.feature import hog
 from predict.featureextractor import FeatureExtractor
+from scipy import misc
+from scipy import ndimage
 
 __author__ = 'Gilles'
 

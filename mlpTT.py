@@ -43,32 +43,35 @@ def get_images_from_directory(directory):
  
 def preprocess_image(image):
     image_array = cv2.imread(image)
-    im = resize(image_array, (128, 128, 3))
+    im = resize(image_array, (64, 64, 3))
     return im
  
  
  
 def build_mlp(nr_features):
     net1 = NeuralNet(
-        layers=[  # three layers: one hidden layer
+
+        layers=[  # four layers: two hidden layers
             ('input', layers.InputLayer),
             ('hidden', layers.DenseLayer),
             ('hidden2', layers.DenseLayer),
+            ('hidden3', layers.DenseLayer),
             ('output', layers.DenseLayer),
             ],
         # layer parameters:
         input_shape=(None, nr_features),  # 96x96 input pixels per batch
-        hidden_num_units=175,  # number of units in hidden layer
-        hidden2_num_units=125,  # number of units in hidden layer
+        hidden_num_units=1152,  # number of units in hidden layer
+        hidden2_num_units=576,  # number of units in hidden layer
+        hidden3_num_units=288,
         output_nonlinearity=lasagne.nonlinearities.softmax,  # output layer uses identity function
         output_num_units=81,  # 30 target values
 
         # optimization method:
         update=nesterov_momentum,
-        update_learning_rate=0.01,
+        update_learning_rate=0.005,
         update_momentum=0.9,
 
-        max_epochs=500,  # we want to train this many epochs
+        max_epochs=300,  # we want to train this many epochs
         verbose=1,
     )
     return net1

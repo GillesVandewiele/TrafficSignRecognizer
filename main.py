@@ -24,7 +24,7 @@ def get_images_from_directory(directory):
 
 ### VARIABLES ###
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")  # Train image directory
-test_images_dir = os.path.join(os.path.dirname(__file__), "test")  # Test image directory
+test_images_dir = os.path.join(os.path.dirname(__file__), "test_labeled")  # Test image directory
 image_size = 64  # The size of the preprocessed image
 nr_bins = 20  # Number of bins in the hue color histogram
 radius = 64  # The radius used for calculating Zernike moments
@@ -47,9 +47,9 @@ feature_extractors = [hog_extractor]#, color_extractor, shape_extractor, symbol_
 
 
 tsr = TrafficSignRecognizer()
-#tsr.make_submission(train_images_path=train_images_dir, test_images_path=test_images_dir,
-#                                      output_file_path="test.xlsx", feature_extractors=feature_extractors, size=64)
+tsr.make_submission(train_images_path=train_images_dir, test_images_path=test_images_dir,
+                                      output_file_path="test.xlsx", feature_extractors=feature_extractors, size=64)
 
-print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors,
-                     k=2, nr_data_augments=1, size=64,times=1))
+#print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors,
+#                     k=2, nr_data_augments=1, size=64,times=1))
 

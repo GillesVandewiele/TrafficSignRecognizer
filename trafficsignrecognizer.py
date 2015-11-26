@@ -67,6 +67,7 @@ class TrafficSignRecognizer(object):
         train_images = self.get_images_from_directory(train_images_path)
         results = self.get_results(train_images_path)
         test_images = self.get_images_from_directory(test_images_path)
+        test_results = self.get_results(test_images_path)
 
         # Create a vector of feature vectors (a feature matrix)
         feature_vectors = []
@@ -115,7 +116,8 @@ class TrafficSignRecognizer(object):
             prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
 
         # Write out the prediction object
-        FileParser.write_CSV(output_file_path, prediction_object)
+        #FileParser.write_CSV(output_file_path, prediction_object)
+        print("Logloss score = ", prediction_object.evaluate(test_results))
 
 
     def local_test(self, train_images_path, feature_extractors, k=2, nr_data_augments=1, size=64, times=1):
@@ -129,97 +131,92 @@ class TrafficSignRecognizer(object):
 
         #results = results[600:1100]
 
-        kf = KFold(len(train_images)*nr_data_augments, n_folds=k, shuffle=True, random_state=1337)
+
         #kf = KFold(500, n_folds=k, shuffle=True, random_state=1337)
         train_errors = []
         test_errors = []
 
-        for train, validation in kf:
-            # Divide the train_images in a training and validation set (using KFold)
-            train_set = [train_images[i%len(train_images)] for i in train]
-            validation_set = [train_images[i%len(train_images)] for i in validation]
-            train_set_results = [results[i%len(train_images)] for i in train]
-            validation_set_results = [results[i%len(train_images)] for i in validation]
 
-            print("Training images")
-            # Create a vector of feature vectors (a feature matrix)
-            feature_vectors = []
-            counter=1
-            sift_extractor = temp_extractor = next((extractor for extractor in feature_extractors if type(extractor) == SiftFeatureExtractor), None)
-            if(sift_extractor != None):
-                sift_extractor.set_codebook(train_set)
-                feature_extractors[feature_extractors.index(temp_extractor)] = sift_extractor
-            for image in train_set:
-                print("Training image ", image)
-                counter += 1
-                preprocessed_color_image = self.preprocess_image(image, size)
-                feature_vector = []
-                for feature_extractor in feature_extractors:
-                    if type(feature_extractor) != SiftFeatureExtractor:
-                        feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
-                    else:
-                        feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
-                feature_vectors.append(feature_vector)
 
-            print("fitting model")
-            # Using logistic regression as linear model to fit our feature_vectors to our results
-            clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
-                             multi_class='ovr', verbose=0)
+        print("Training images")
+        # Create a vector of feature vectors (a feature matrix)
+        feature_vectors = []
+        counter=1
+        sift_extractor = temp_extractor = next((extractor for extractor in feature_extractors if type(extractor) == SiftFeatureExtractor), None)
+        if(sift_extractor != None):
+            sift_extractor.set_codebook(train_set)
+            feature_extractors[feature_extractors.index(temp_extractor)] = sift_extractor
+        for image in train_set:
+            print("Training image ", image)
+            counter += 1
+            preprocessed_color_image = self.preprocess_image(image, size)
+            feature_vector = []
+            for feature_extractor in feature_extractors:
+                if type(feature_extractor) != SiftFeatureExtractor:
+                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                else:
+                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
+            feature_vectors.append(feature_vector)
 
-            #clf = RandomForestClassifier(n_estimators=100,max_features="log2",max_depth=15)
+        print("fitting model")
+        # Using logistic regression as linear model to fit our feature_vectors to our results
+        clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
+                         multi_class='ovr', verbose=0)
 
-            # Logistic Regression for feature selection, higher C = more features will be deleted
-            clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
-            """
-            reduction = Lasso()
-            scaler = StandardScaler()
-            X = scaler.fit_transform(feature_vectors)
-            le = preprocessing.LabelEncoder()
-            le.fit(train_set_results)
-            reduction.fit(X, le.transform(train_set_results))
-            print(reduction.coef_)
-            """
+        #clf = RandomForestClassifier(n_estimators=100,max_features="log2",max_depth=15)
 
-            # Feature selection/reduction
-            new_feature_vectors = clf2.fit_transform(feature_vectors, train_set_results)
+        # Logistic Regression for feature selection, higher C = more features will be deleted
+        clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
+        """
+        reduction = Lasso()
+        scaler = StandardScaler()
+        X = scaler.fit_transform(feature_vectors)
+        le = preprocessing.LabelEncoder()
+        le.fit(train_set_results)
+        reduction.fit(X, le.transform(train_set_results))
+        print(reduction.coef_)
+        """
 
-            #clf.coef_ = reduction.coef_
-            # Model fitting
-            clf.fit(new_feature_vectors, train_set_results)
+        # Feature selection/reduction
+        new_feature_vectors = clf2.fit_transform(feature_vectors, train_set_results)
 
-            print("predicting train images")
-            train_prediction_object = Prediction()
-            counter=0
-            for im in train_set:
-                print("predicting train image ", counter)
-                counter+=1
-                preprocessed_color_image = self.preprocess_image(im, size)
-                validation_feature_vector = []
-                for feature_extractor in feature_extractors:
-                    if type(feature_extractor) != SiftFeatureExtractor:
-                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
-                    else:
-                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(im))
-                new_validation_feature_vector = clf2.transform(validation_feature_vector)
-                train_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
+        #clf.coef_ = reduction.coef_
+        # Model fitting
+        clf.fit(new_feature_vectors, train_set_results)
 
-            print("predicting test images")
-            test_prediction_object = Prediction()
-            counter=0
-            for im in validation_set:
-                print("predicting test image ", counter)
-                counter+=1
-                preprocessed_color_image = self.preprocess_image(im, size)
-                validation_feature_vector = []
-                for feature_extractor in feature_extractors:
-                    if type(feature_extractor) != SiftFeatureExtractor:
-                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
-                    else:
-                        validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(im))
-                new_validation_feature_vector = clf2.transform(validation_feature_vector)
-                test_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
+        print("predicting train images")
+        train_prediction_object = Prediction()
+        counter=0
+        for im in train_set:
+            print("predicting train image ", counter)
+            counter+=1
+            preprocessed_color_image = self.preprocess_image(im, size)
+            validation_feature_vector = []
+            for feature_extractor in feature_extractors:
+                if type(feature_extractor) != SiftFeatureExtractor:
+                    validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                else:
+                    validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(im))
+            new_validation_feature_vector = clf2.transform(validation_feature_vector)
+            train_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
 
-            train_errors.append(train_prediction_object.evaluate(train_set_results))
-            test_errors.append(test_prediction_object.evaluate(validation_set_results))
+        print("predicting test images")
+        test_prediction_object = Prediction()
+        counter=0
+        for im in validation_set:
+            print("predicting test image ", counter)
+            counter+=1
+            preprocessed_color_image = self.preprocess_image(im, size)
+            validation_feature_vector = []
+            for feature_extractor in feature_extractors:
+                if type(feature_extractor) != SiftFeatureExtractor:
+                    validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                else:
+                    validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(im))
+            new_validation_feature_vector = clf2.transform(validation_feature_vector)
+            test_prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
+
+        train_errors.append(train_prediction_object.evaluate(train_set_results))
+        test_errors.append(test_prediction_object.evaluate(validation_set_results))
 
         return [train_errors, test_errors]

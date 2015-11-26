@@ -57,14 +57,12 @@ def build_mlp(nr_features):
             ('input', layers.InputLayer),
             ('hidden', layers.DenseLayer),
             ('hidden2', layers.DenseLayer),
-            ('hidden3', layers.DenseLayer),
             ('output', layers.DenseLayer),
             ],
         # layer parameters:
         input_shape=(None, nr_features),  # 96x96 input pixels per batch
-        hidden_num_units=300,  # number of units in hidden layer
-        hidden2_num_units=250,  # number of units in hidden layer
-        hidden2_num_units=200,  # number of units in hidden layer
+        hidden_num_units=175,  # number of units in hidden layer
+        hidden2_num_units=125,  # number of units in hidden layer
         output_nonlinearity=lasagne.nonlinearities.softmax,  # output layer uses identity function
         output_num_units=81,  # 30 target values
 
@@ -73,7 +71,7 @@ def build_mlp(nr_features):
         update_learning_rate=0.01,
         update_momentum=0.9,
 
-        max_epochs=100,  # we want to train this many epochs
+        max_epochs=1000,  # we want to train this many epochs
         verbose=1,
     )
     return net1
@@ -93,10 +91,10 @@ def main(num_epochs=100):
           len(test_images), " with ", len(test_results), " corresponding results.")
 
     cfe = HogFeatureExtractor(8)
-    sift_extractor = SiftFeatureExtractor()
-    sift_extractor.set_codebook(train_images)
+    #sift_extractor = SiftFeatureExtractor()
+    #sift_extractor.set_codebook(train_images)
 
-    feature_extractors = [cfe, sift_extractor]
+    feature_extractors = [cfe]#, sift_extractor]
 
     feature_vectors = []
     for image in train_images:

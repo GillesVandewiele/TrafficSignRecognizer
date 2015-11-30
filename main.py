@@ -30,7 +30,7 @@ nr_bins = 20  # Number of bins in the hue color histogram
 radius = 64  # The radius used for calculating Zernike moments
 clusters = 3  # Dominant colors used for k-means clustering before DCT
 n_coeff = 1000  # Number of DCT coefficients to include in the feature vector
-pixels_per_cell = 8  # Pixels per cell for HOG vector
+pixels_per_cell = 6  # Pixels per cell for HOG vector
 block_size = 64 # Image size
 number_of_descriptors = 250
 
@@ -43,13 +43,14 @@ shape_extractor = ShapeFeatureExtractor(radius)
 symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
 sift_extractor = SiftFeatureExtractor()
 
-feature_extractors = [hog_extractor]#, color_extractor, shape_extractor, symbol_extractor, sift_extractor]
+feature_extractors = [hog_extractor]#, symbol_extractor, sift_extractor, shape_extractor]#, color_extractor]
 
 
 tsr = TrafficSignRecognizer()
-tsr.make_submission(train_images_path=train_images_dir, test_images_path=test_images_dir,
-                                      output_file_path="test.xlsx", feature_extractors=feature_extractors, size=64)
 
-#print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors,
-#                     k=2, nr_data_augments=1, size=64,times=1))
+#tsr.make_submission(train_images_path=train_images_dir, test_images_path=test_images_dir, output_file_path="test.xlsx", feature_extractors=feature_extractors, times=2, size=64)
+#tsr.make_submission(train_images_path=train_images_dir, test_images_path=test_images_dir, output_file_path="test.xlsx", feature_extractors=feature_extractors, times=4, size=64)
+
+
+print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors,k=2, nr_data_augments=1, size=64, times=1))
 

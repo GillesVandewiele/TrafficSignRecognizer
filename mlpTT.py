@@ -16,6 +16,7 @@ from inout.fileparser import FileParser
 from predict.hogfeatureextractor import HogFeatureExtractor
 from predict.prediction import Prediction
 from predict.siftfeatureextractor import SiftFeatureExtractor
+from predict.symbolfeatureextractor import SymbolFeatureExtractor
 
 
 def get_results(train_images_dir):
@@ -61,8 +62,8 @@ def build_mlp(nr_features):
             ],
         # layer parameters:
         input_shape=(None, nr_features),  # 96x96 input pixels per batch
-        hidden_num_units=175,  # number of units in hidden layer
-        hidden2_num_units=125,  # number of units in hidden layer
+        hidden_num_units=3456,  # number of units in hidden layer
+        hidden2_num_units=1728,  # number of units in hidden layer
         output_nonlinearity=lasagne.nonlinearities.softmax,  # output layer uses identity function
         output_num_units=81,  # 30 target values
 
@@ -71,7 +72,7 @@ def build_mlp(nr_features):
         update_learning_rate=0.01,
         update_momentum=0.9,
 
-        max_epochs=1000,  # we want to train this many epochs
+        max_epochs=200,  # we want to train this many epochs
         verbose=1,
     )
     return net1
@@ -86,15 +87,15 @@ def main(num_epochs=100):
     test_images = get_images_from_directory(test_images_dir)
     train_results = get_results(train_images_dir)
     test_results = get_results(test_images_dir)
-
     print("Loaded: ", len(train_images), " train images with ", len(train_results), " corresponding results and ",
           len(test_images), " with ", len(test_results), " corresponding results.")
 
-    cfe = HogFeatureExtractor(8)
+    cfe = HogFeatureExtractor(6)
     #sift_extractor = SiftFeatureExtractor()
     #sift_extractor.set_codebook(train_images)
+    #symbol_extractor = SymbolFeatureExtractor(3, 64, 64)
 
-    feature_extractors = [cfe]#, sift_extractor]
+    feature_extractors = [cfe]#, sift_extractor, symbol_extractor]
 
     feature_vectors = []
     for image in train_images:
@@ -110,7 +111,7 @@ def main(num_epochs=100):
 
     print("Feature reduction")
     print("From shape: ", len(feature_vectors), len(feature_vectors[0]))
-    clf = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=0.1)
+    clf = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
 
     # Feature selection/reduction
     new_feature_vectors = clf.fit_transform(feature_vectors, train_results)

@@ -28,11 +28,12 @@ class ShapeFeatureExtractor(FeatureExtractor):
         :param image: a hue image (can be extracted using the Color Feature Extractor
         :return: a feature vector containing geometric and Zernike moments
         """
-        hue_image = ColorFeatureExtractor.extract_hue(image)
-        hue_gray_image = (np.rint(asarray(hue_image) * 255)).astype(np.uint8)
-        contour = self.calculateRimContour(hue_gray_image)
-        feature_vector = self.calculateGeometricMoments(contour)
-        feature_vector = append(feature_vector, self.extract_zernike(color.rgb2gray(image), self.radius))
+        # hue_image = ColorFeatureExtractor.extract_hue(image)
+        # hue_gray_image = (np.rint(asarray(hue_image) * 255)).astype(np.uint8)
+        # contour = self.calculateRimContour(hue_gray_image)
+        # feature_vector = self.calculateGeometricMoments(contour)
+        # feature_vector = append(feature_vector, self.extract_zernike(color.rgb2gray(image), self.radius))
+        feature_vector = self.extract_zernike(color.rgb2gray(image), self.radius)
         return feature_vector
 
     @staticmethod

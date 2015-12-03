@@ -5,6 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from clean import Recognizer
 from predict.colorfeatureextractor import ColorFeatureExtractor
 from predict.hogfeatureextractor import HogFeatureExtractor
+from predict.prediction import Prediction
 from predict.shapefeatureextractor import ShapeFeatureExtractor
 from predict.siftfeatureextractor import SiftFeatureExtractor
 from predict.symbolfeatureextractor import SymbolFeatureExtractor
@@ -34,6 +35,19 @@ def get_results(train_images_dir):
         os.listdir(os.path.join(train_images_dir, shapesDirectory))
         for signDirectory in os.listdir(os.path.join(train_images_dir, shapesDirectory)):
             results.extend([signDirectory]*len(os.listdir(os.path.join(train_images_dir, shapesDirectory, signDirectory))))
+
+    return results
+
+def get_results_nn(train_images_dir):
+    # Check all files in the directory, the parent directory of a photo is the label
+    results = []
+    pred = Prediction()
+    for shapesDirectory in os.listdir(train_images_dir):
+        os.listdir(os.path.join(train_images_dir, shapesDirectory))
+        for signDirectory in os.listdir(os.path.join(train_images_dir, shapesDirectory)):
+            dir = [signDirectory]*len(os.listdir(os.path.join(train_images_dir, shapesDirectory, signDirectory)))
+            for el in dir:
+                results.append(pred.TRAFFIC_SIGNS.index(el))
 
     return results
 
@@ -94,11 +108,13 @@ linear = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercep
                             multi_class='ovr', verbose=0)
 random_tree = RandomForestClassifier(n_estimators=100,max_features="log2",max_depth=15)
 neural_network = "neural"
-conv_network = "conv"  # IMPORTANT!! make sure feature_vectors = [] when passing along conv_network with our methods
+conv_network = "conv"  # IMPORTANT!! make sure feature_extractors = [] when passing along conv_network with our methods
 
 tsr = Recognizer()
 
+#train_images, train_results = extract_subset(train_images_dir, 2000, 1337)
 train_images = get_images_from_directory(train_images_dir)
-train_results = get_results(train_images_dir)
+#train_results = get_results(train_images_dir)
+train_results = get_results_nn(train_images_dir)
 test_images = get_images_from_directory(test_images_dir)
-print(tsr.local_test(train_images, train_results, feature_extractors, linear))
+print(tsr.local_test(train_images, train_results, feature_extractors, "neural"))

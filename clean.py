@@ -2,7 +2,7 @@ import cv2
 from lasagne import layers
 import lasagne
 from lasagne.updates import nesterov_momentum
-from nolearn.lasagne import NeuralNet
+from nolearn.lasagne import NeuralNet, PrintLayerInfo
 from numpy import append
 from skimage.transform import resize
 from sklearn.cross_validation import KFold
@@ -21,25 +21,27 @@ class Recognizer(object):
 
     def build_nn(self, nr_features):
         net1 = NeuralNet(
-            layers=[  # three layers: one hidden layer
+            layers=[
                 ('input', layers.InputLayer),
+                ('dropout1', layers.DropoutLayer),
                 ('hidden', layers.DenseLayer),
                 ('hidden2', layers.DenseLayer),
+                ('dropout2', layers.DropoutLayer),
                 ('output', layers.DenseLayer),
                 ],
-            # layer parameters:1152 576
+            # layer parameters
             input_shape=(None, nr_features),
-            hidden_num_units=1152,
-            hidden2_num_units=576,
+            hidden_num_units=2048,
+            hidden2_num_units=1024,
             output_nonlinearity=lasagne.nonlinearities.softmax,
             output_num_units=81,
 
             # optimization method:
             update=nesterov_momentum,
-            update_learning_rate=0.01,
-            update_momentum=0.9,
+            update_learning_rate=0.03,
+            update_momentum=0.90,
 
-            max_epochs=300,
+            max_epochs=200,
             verbose=1,
         )
         return net1
@@ -79,7 +81,7 @@ class Recognizer(object):
         )
         return net1
 
-    def make_submission(self, train_images, train_results, test_images, output_file_path, feature_extractors, model, size=64):
+    def make_submission(self, train_images, train_results, test_images, test_results, output_file_path, feature_extractors, model, size=64):
         # Create a vector of feature vectors and initialize the codebook of sift extractor
         feature_vectors = []
         sift_extractor = temp_extractor = next((extractor for extractor in feature_extractors if type(extractor) == SiftFeatureExtractor), None)
@@ -108,9 +110,16 @@ class Recognizer(object):
 
         # Feature selection/reduction
         if(model != "conv"):
+            print("Old feature vector shape = ", len(feature_vectors), len(feature_vectors[0]))
             new_feature_vectors = clf2.fit_transform(feature_vectors, train_results)
+            print("New feature vector shape = ", len(new_feature_vectors), len(new_feature_vectors[0]))
             if(model == "neural"):
                 model = self.build_nn(nr_features=len(new_feature_vectors[0]))
+                new_feature_vectors = np.asarray(new_feature_vectors)
+                train_results = np.asarray(train_results)
+                model.initialize()
+                layer_info = PrintLayerInfo()
+                layer_info(model)
 
             # Fit our model
             model.fit(new_feature_vectors, train_results)
@@ -119,7 +128,7 @@ class Recognizer(object):
             model = self.build_conv()
 
             # Fit our model
-            model.fit(feature_vectors, train_results)
+            model.fit(np.asarray(feature_vectors), np.asarray(train_results))
 
         # Iterate over the test images and add their prediction to a prediction object
         prediction_object = Prediction()
@@ -138,6 +147,7 @@ class Recognizer(object):
                 validation_feature_vector = np.asarray(resize(cv2.imread(image), (48, 48, 3)).transpose(2,0,1).reshape(3, 48, 48))
             prediction_object.addPrediction(model.predict_proba(validation_feature_vector)[0])
 
+        print("Logloss = ", prediction_object.evaluate(test_results))
         # Write out the prediction object
         FileParser.write_CSV(output_file_path, prediction_object)
 
@@ -187,6 +197,11 @@ class Recognizer(object):
                 new_feature_vectors = clf2.fit_transform(feature_vectors, train_set_results)
                 if(model == "neural"):
                     model = self.build_nn(nr_features=len(new_feature_vectors[0]))
+                    new_feature_vectors = np.asarray(new_feature_vectors)
+                    train_set_results = np.asarray(train_set_results)
+                    model.initialize()
+                    layer_info = PrintLayerInfo()
+                    layer_info(model)
 
                 # Fit our model
                 model.fit(new_feature_vectors, train_set_results)
@@ -195,7 +210,7 @@ class Recognizer(object):
                 model = self.build_conv()
 
                 # Fit our model
-                model.fit(feature_vectors, train_set_results)
+                model.fit(np.asarray(feature_vectors), np.asarray(train_set_results))
 
             train_prediction_object = Prediction()
             counter=0

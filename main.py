@@ -9,7 +9,6 @@ from predict.prediction import Prediction
 from predict.shapefeatureextractor import ShapeFeatureExtractor
 from predict.siftfeatureextractor import SiftFeatureExtractor
 from predict.symbolfeatureextractor import SymbolFeatureExtractor
-from trafficsignrecognizer import TrafficSignRecognizer
 
 __author__ = 'Group16'
 
@@ -90,7 +89,7 @@ nr_bins = 20  # Number of bins in the hue color histogram
 radius = 64  # The radius used for calculating Zernike moments
 clusters = 3  # Dominant colors used for k-means clustering before DCT
 n_coeff = 1000  # Number of DCT coefficients to include in the feature vector
-pixels_per_cell = 4  # Pixels per cell for HOG vector
+pixels_per_cell = 6  # Pixels per cell for HOG vector
 block_size = 64 # Image size
 number_of_descriptors = 250
 
@@ -101,7 +100,7 @@ shape_extractor = ShapeFeatureExtractor(radius)
 symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
 sift_extractor = SiftFeatureExtractor()
 
-feature_extractors = [hog_extractor]#, symbol_extractor, sift_extractor, shape_extractor]#, color_extractor]
+feature_extractors = [hog_extractor, symbol_extractor]#, sift_extractor, shape_extractor]#, color_extractor]
 
 ### MODELS ###
 linear = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
@@ -117,4 +116,6 @@ train_images = get_images_from_directory(train_images_dir)
 #train_results = get_results(train_images_dir)
 train_results = get_results_nn(train_images_dir)
 test_images = get_images_from_directory(test_images_dir)
-print(tsr.local_test(train_images, train_results, feature_extractors, "neural"))
+test_results = get_results_nn(test_images_dir)
+tsr.make_submission(train_images, train_results, test_images, test_results, "test.xlsx", feature_extractors, neural_network)
+#print(tsr.local_test(train_images, train_results, feature_extractors, neural_network))

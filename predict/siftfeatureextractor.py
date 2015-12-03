@@ -73,9 +73,7 @@ class SiftFeatureExtractor(FeatureExtractor):
 
     def get_code_book(self, train_images):
         features = self.extractSift(train_images)
-        print(len(features), len(features[0]))
         all_features_array = asarray(features)
-        print(all_features_array.shape)
         nfeatures = all_features_array.shape[0]
         nclusters = int(sqrt(nfeatures))
         codebook, distortion = vq.kmeans(all_features_array,

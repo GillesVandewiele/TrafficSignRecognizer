@@ -1,4 +1,5 @@
 import os
+import random
 import cv2
 from numpy import append
 from skimage.transform import resize
@@ -110,17 +111,46 @@ class TrafficSignRecognizer(object):
         # Write out the prediction object
         FileParser.write_CSV(output_file_path, prediction_object)
 
+    def extract_subset(self, images_path, subset_length, seed):
+        all_images = []
+        all_results = []
+        images_subset = []
+        results_subset = []
+        random.seed(seed)
+        # First take a random image of each class
+        for shapesDirectory in os.listdir(images_path):
+            os.listdir(os.path.join(images_path, shapesDirectory))
+            for signDirectory in os.listdir(os.path.join(images_path, shapesDirectory)):
+                index = random.randint(0, len(os.listdir(os.path.join(images_path, shapesDirectory, signDirectory))) - 1)
+                images_subset.append(os.path.join(images_path, shapesDirectory, signDirectory, os.listdir(os.path.join(images_path, shapesDirectory, signDirectory))[index]))
+                results_subset.append(signDirectory)
+
+        # Now shuffle the list and take the remaining amount of required images
+        for shapesDirectory in os.listdir(images_path):
+            os.listdir(os.path.join(images_path, shapesDirectory))
+            for signDirectory in os.listdir(os.path.join(images_path, shapesDirectory)):
+                for image in os.listdir(os.path.join(images_path, shapesDirectory, signDirectory)):
+                    all_images.append(os.path.join(images_path, shapesDirectory, signDirectory, image))
+                    all_results.append(signDirectory)
+
+        combined = list(zip(all_images, all_results))
+        random.shuffle(combined)
+        shuffled_images, shuffled_results = zip(*combined)
+
+        images_subset.extend(shuffled_images[:subset_length-81])
+        results_subset.extend(shuffled_results[:subset_length-81])
+
+        return [images_subset, results_subset]
 
     def local_test(self, train_images_path, feature_extractors, k=2, nr_data_augments=1, size=64, times=1):
         # Extract the train images with corresponding results
         train_images = self.get_images_from_directory(train_images_path)
-        #train_images = train_images[600:1100]
         results = self.get_results(train_images_path)
+        #train_images, results = self.extract_subset(train_images_path, 256, seed=13337)
+        #validation_images, validation_results = self.extract_subset(train_images_path, 256, seed=1337)
         for i in range(1,times):
             train_images = train_images + train_images
             results = results + results
-
-        #results = results[600:1100]
 
         kf = KFold(len(train_images)*nr_data_augments, n_folds=k, shuffle=True, random_state=1337)
         #kf = KFold(500, n_folds=k, shuffle=True, random_state=1337)
@@ -156,22 +186,14 @@ class TrafficSignRecognizer(object):
 
             print("fitting model")
             # Using logistic regression as linear model to fit our feature_vectors to our results
-            #clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
-            #                 multi_class='ovr', verbose=0)
+            clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
+                                     multi_class='ovr', verbose=0)
 
-            clf = RandomForestClassifier(n_estimators=100,max_features="log2",max_depth=15)
+            #clf = RandomForestClassifier(n_estimators=100,max_features="log2",max_depth=15)
 
             # Logistic Regression for feature selection, higher C = more features will be deleted
             clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
-            """
-            reduction = Lasso()
-            scaler = StandardScaler()
-            X = scaler.fit_transform(feature_vectors)
-            le = preprocessing.LabelEncoder()
-            le.fit(train_set_results)
-            reduction.fit(X, le.transform(train_set_results))
-            print(reduction.coef_)
-            """
+
 
             # Feature selection/reduction
             new_feature_vectors = clf2.fit_transform(feature_vectors, train_set_results)
@@ -216,3 +238,47 @@ class TrafficSignRecognizer(object):
             test_errors.append(test_prediction_object.evaluate(validation_set_results))
 
         return [train_errors, test_errors]
+
+        """
+        print("Training images")
+        # Create a vector of feature vectors (a feature matrix)
+        feature_vectors = []
+        counter=1
+        sift_extractor = temp_extractor = next((extractor for extractor in feature_extractors if type(extractor) == SiftFeatureExtractor), None)
+        if(sift_extractor != None):
+            sift_extractor.set_codebook(train_images)
+            feature_extractors[feature_extractors.index(temp_extractor)] = sift_extractor
+        for image in train_images:
+            print("Training image ", image)
+            counter += 1
+            preprocessed_color_image = self.preprocess_image(image, size)
+            feature_vector = []
+            for feature_extractor in feature_extractors:
+                if type(feature_extractor) != SiftFeatureExtractor:
+                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                else:
+                    feature_vector = append(feature_vector, feature_extractor.extract_feature_vector(image))
+            feature_vectors.append(feature_vector)
+        print("==================>FEATURE VECTOR LENGTH = ", len(feature_vectors[0]))
+        clf = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
+                                 multi_class='ovr', verbose=0)
+        clf2 = LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=4)
+        new_feature_vectors = clf2.fit_transform(feature_vectors, results)
+        clf.fit(new_feature_vectors, results)
+        prediction_object = Prediction()
+        counter=0
+        for im in validation_images:
+            print("predicting train image ", counter)
+            counter+=1
+            preprocessed_color_image = self.preprocess_image(im, size)
+            validation_feature_vector = []
+            for feature_extractor in feature_extractors:
+                if type(feature_extractor) != SiftFeatureExtractor:
+                    validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(preprocessed_color_image))
+                else:
+                    validation_feature_vector = append(validation_feature_vector, feature_extractor.extract_feature_vector(im))
+            new_validation_feature_vector = clf2.transform(validation_feature_vector)
+            prediction_object.addPrediction(clf.predict_proba(new_validation_feature_vector)[0])
+
+        print("Logloss score  = ", prediction_object.evaluate(validation_results))
+        """

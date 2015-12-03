@@ -43,7 +43,7 @@ class SiftFeatureExtractor(FeatureExtractor):
     def extractSift(self, input_files):
         all_words = []
         for i, fname in enumerate(input_files):
-            print("calculating sift features for", fname)
+            #print("calculating sift features for", fname)
             if type(fname) == str:
                 #print("test")
                 image_array = cv2.imread(fname)

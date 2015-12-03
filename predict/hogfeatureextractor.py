@@ -3,6 +3,8 @@ from skimage import color
 from skimage.transform import resize
 from skimage.feature import hog
 from predict.featureextractor import FeatureExtractor
+from scipy import misc
+from scipy import ndimage
 
 __author__ = 'Gilles'
 
@@ -33,5 +35,5 @@ class HogFeatureExtractor(FeatureExtractor):
         return self.extract_hog(img, self.pixels_per_cell)
 
     def extract_hog(self, image, ppc):
-        fd = hog(image, orientations=9, pixels_per_cell=(ppc, ppc), cells_per_block=(1, 1), normalise=True)
+        fd = hog(image, orientations=9, pixels_per_cell=(ppc, ppc), cells_per_block=(2, 2), normalise=True)
         return fd.tolist()

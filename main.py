@@ -70,7 +70,7 @@ def extract_subset(images_path, subset_length, seed):
 
 ### VARIABLES ###
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")  # Train image directory
-test_images_dir = os.path.join(os.path.dirname(__file__), "test")  # Test image directory
+test_images_dir = os.path.join(os.path.dirname(__file__), "test_labeled")  # Test image directory
 image_size = 64  # The size of the preprocessed image
 nr_bins = 20  # Number of bins in the hue color histogram
 radius = 64  # The radius used for calculating Zernike moments
@@ -87,7 +87,7 @@ shape_extractor = ShapeFeatureExtractor(radius)
 symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
 sift_extractor = SiftFeatureExtractor()
 
-feature_extractors = [hog_extractor]#, color_extractor, shape_extractor, symbol_extractor, sift_extractor]
+feature_extractors = [hog_extractor]#, symbol_extractor, sift_extractor, shape_extractor]#, color_extractor]
 
 ### MODELS ###
 linear = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
@@ -97,7 +97,6 @@ neural_network = "neural"
 conv_network = "conv"  # IMPORTANT!! make sure feature_vectors = [] when passing along conv_network with our methods
 
 tsr = Recognizer()
-
 
 train_images, train_results = extract_subset(train_images_dir, 2000, 1337)
 print(tsr.local_test(train_images, train_results, feature_extractors, linear))

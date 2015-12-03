@@ -98,5 +98,7 @@ conv_network = "conv"  # IMPORTANT!! make sure feature_vectors = [] when passing
 
 tsr = Recognizer()
 
-train_images, train_results = extract_subset(train_images_dir, 2000, 1337)
+train_images = get_images_from_directory(train_images_dir)
+train_results = get_results(train_images_dir)
+test_images = get_images_from_directory(test_images_dir)
 print(tsr.local_test(train_images, train_results, feature_extractors, linear))

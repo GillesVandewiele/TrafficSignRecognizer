@@ -28,11 +28,11 @@ class Recognizer(object):
                 ('output', layers.DenseLayer),
                 ],
             # layer parameters:1152 576
-            input_shape=(None, nr_features),  # 96x96 input pixels per batch
-            hidden_num_units=1152,  # number of units in hidden layer
-            hidden2_num_units=576,  # number of units in hidden layer
-            output_nonlinearity=lasagne.nonlinearities.softmax,  # output layer uses identity function
-            output_num_units=81,  # 30 target values
+            input_shape=(None, nr_features),
+            hidden_num_units=1152,
+            hidden2_num_units=576,
+            output_nonlinearity=lasagne.nonlinearities.softmax,
+            output_num_units=81,
 
             # optimization method:
             update=nesterov_momentum,

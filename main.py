@@ -2,7 +2,7 @@ import os
 import random
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from clean import Recognizer
+from recognizer import Recognizer
 from predict.colorfeatureextractor import ColorFeatureExtractor
 from predict.hogfeatureextractor import HogFeatureExtractor
 from predict.prediction import Prediction
@@ -90,6 +90,7 @@ radius = 64  # The radius used for calculating Zernike moments
 clusters = 3  # Dominant colors used for k-means clustering before DCT
 n_coeff = 1000  # Number of DCT coefficients to include in the feature vector
 pixels_per_cell = 6  # Pixels per cell for HOG vector
+n_coeff=250
 block_size = 64 # Image size
 number_of_descriptors = 250
 
@@ -97,7 +98,7 @@ number_of_descriptors = 250
 hog_extractor = HogFeatureExtractor(pixels_per_cell)
 color_extractor = ColorFeatureExtractor(nr_bins)
 shape_extractor = ShapeFeatureExtractor(radius)
-symbol_extractor = SymbolFeatureExtractor(clusters, block_size, image_size)
+symbol_extractor = SymbolFeatureExtractor(clusters, block_size, n_coeff)
 sift_extractor = SiftFeatureExtractor()
 
 feature_extractors = [hog_extractor, symbol_extractor]#, sift_extractor, shape_extractor]#, color_extractor]

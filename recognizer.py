@@ -26,6 +26,7 @@ class Recognizer(object):
                 ('dropout1', layers.DropoutLayer),
                 ('hidden', layers.DenseLayer),
                 ('hidden2', layers.DenseLayer),
+                ('dropout2', layers.DropoutLayer),
                 ('output', layers.DenseLayer),
                 ],
             # layer parameters

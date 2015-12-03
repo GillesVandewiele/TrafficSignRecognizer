@@ -83,7 +83,7 @@ def extract_subset(images_path, subset_length, seed):
 
 ### VARIABLES ###
 train_images_dir = os.path.join(os.path.dirname(__file__), "train")  # Train image directory
-test_images_dir = os.path.join(os.path.dirname(__file__), "test_labeled")  # Test image directory
+test_images_dir = os.path.join(os.path.dirname(__file__), "test")  # Test image directory
 image_size = 64  # The size of the preprocessed image
 nr_bins = 20  # Number of bins in the hue color histogram
 radius = 64  # The radius used for calculating Zernike moments
@@ -117,6 +117,5 @@ train_images = get_images_from_directory(train_images_dir)
 #train_results = get_results(train_images_dir)
 train_results = get_results_nn(train_images_dir)
 test_images = get_images_from_directory(test_images_dir)
-test_results = get_results_nn(test_images_dir)
-tsr.make_submission(train_images, train_results, test_images, test_results, "test.xlsx", feature_extractors, neural_network)
+tsr.make_submission(train_images, train_results, test_images, None, "test.xlsx", feature_extractors, neural_network)
 #print(tsr.local_test(train_images, train_results, feature_extractors, neural_network))

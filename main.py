@@ -114,7 +114,6 @@ tsr = Recognizer()
 
 #train_images, train_results = extract_subset(train_images_dir, 2000, 1337)
 train_images = get_images_from_directory(train_images_dir)
-#train_results = get_results(train_images_dir)
 train_results = get_results_nn(train_images_dir)
 test_images = get_images_from_directory(test_images_dir)
 tsr.make_submission(train_images, train_results, test_images, None, "test.xlsx", feature_extractors, neural_network)

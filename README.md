@@ -46,3 +46,11 @@ All variables can be declared in main.py and feature extractors can be selected.
 `tsr.make_submission(train_images_path=train_images_dir, test_images_path=test_images_dir, output_file_path="test.xlsx", feature_extractors=feature_extractors, size=64)`
 
 `print(tsr.local_test(train_images_path=train_images_dir, feature_extractors=feature_extractors, k=2, nr_data_augments=1, size=64))`
+
+## Bug
+
+We also have a bug for making a submisson for which we didn't have time to fix. Depending on the model, line 38 should be commentend or not in fileparser.py.
+For the linear model and random forest, the line should be included:
+	sorted_signs = sorted(predictionObject.TRAFFIC_SIGNS)
+For the neural network the line should be commented:
+  #sorted_signs = sorted(predictionObject.TRAFFIC_SIGNS)

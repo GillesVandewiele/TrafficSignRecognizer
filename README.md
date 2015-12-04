@@ -51,6 +51,6 @@ All variables can be declared in main.py and feature extractors can be selected.
 
 We also have a bug for making a submisson for which we didn't have time to fix. Depending on the model, line 38 should be commentend or not in fileparser.py.
 For the linear model and random forest, the line should be included:
-	sorted_signs = sorted(predictionObject.TRAFFIC_SIGNS)
+	`sorted_signs = sorted(predictionObject.TRAFFIC_SIGNS)`
 For the neural network the line should be commented:
-  #sorted_signs = sorted(predictionObject.TRAFFIC_SIGNS)
+  	`#sorted_signs = sorted(predictionObject.TRAFFIC_SIGNS)`

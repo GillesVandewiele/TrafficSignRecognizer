@@ -81,7 +81,7 @@ class Recognizer(object):
         )
         return net1
 
-    def make_submission(self, train_images, train_results, test_images, test_results, output_file_path, feature_extractors, model, size=64):
+    def make_submission(self, train_images, train_results, test_images, output_file_path, feature_extractors, model, size=64):
         # Create a vector of feature vectors and initialize the codebook of sift extractor
         feature_vectors = []
         sift_extractor = temp_extractor = next((extractor for extractor in feature_extractors if type(extractor) == SiftFeatureExtractor), None)
@@ -147,7 +147,6 @@ class Recognizer(object):
                 validation_feature_vector = np.asarray(resize(cv2.imread(image), (48, 48, 3)).transpose(2,0,1).reshape(3, 48, 48))
             prediction_object.addPrediction(model.predict_proba(validation_feature_vector)[0])
 
-        print("Logloss = ", prediction_object.evaluate(test_results))
         # Write out the prediction object
         FileParser.write_CSV(output_file_path, prediction_object)
 

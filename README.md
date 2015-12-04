@@ -28,6 +28,13 @@ http://www.lfd.uci.edu/~gohlke/pythonlibs/#mahotas
 To install, just download the 64-bit or 32-bit .whl file appropriate for your system, then run pip install [filename]. 
 Then the instruction import cv2 should work in your Python 3.x interpreter.
 
+## Lasagne
+
+Lasagne is a lightweight library to build and train neural networks in Theano.
+How it can be installed is explained in their docs:
+
+http://lasagne.readthedocs.org/en/latest/user/installation.html
+
 
 # IDE: Pycharm (JetBrains)
 

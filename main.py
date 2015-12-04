@@ -101,7 +101,7 @@ shape_extractor = ShapeFeatureExtractor(radius)
 symbol_extractor = SymbolFeatureExtractor(clusters, block_size, n_coeff)
 sift_extractor = SiftFeatureExtractor()
 
-feature_extractors = [hog_extractor, symbol_extractor]#, sift_extractor, shape_extractor]#, color_extractor]
+feature_extractors = [hog_extractor, symbol_extractor, sift_extractor, shape_extractor]#, color_extractor]
 
 ### MODELS ###
 linear = LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=32, intercept_scaling=1, solver='liblinear', max_iter=100,
